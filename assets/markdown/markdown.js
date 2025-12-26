@@ -1,6 +1,6 @@
 window.importMarkdown = (() => {
   let context = {};
-  
+
   async function importMarkdown(container, url, options) {
     options = {
       lineMark: false,
@@ -13,47 +13,7 @@ window.importMarkdown = (() => {
     let source = decoder.decode(data);
 
     if (options.lineMark) {
-      let block = null;
-      source = source.replaceAll("\r\n", "\n")
-        .split("\n")
-        .map((li, num) => {
-          if (block === null) {
-            if (li.match(/^```/)) {
-              block = '```'
-              return li;
-            }
-            const match = li.match(/^<(script|style)>/);
-            if (match) {
-              block = `</${match[1]}>`
-              return li;
-            }            
-          }
-          if (block !== null) {
-            if (li.includes(block)) {
-              blockStarted = null;
-            }
-            return li;
-          }          
-          if (li.trim().length === 0) {
-            return li;
-          }
-
-          if (li.match(/^{%/)) { // embedded blocks
-            return li;
-          }
-          if (li.match(/^[\s\|\-]+$/)) { // table definition
-            return li;
-          }
-          if (li.match(/^([=]+|[\-]+|[\*]+)$/)) { // quote definition
-            return li;
-          }
-          let match = li.match(/^(\s+|[|]\s+|[#]+\s+|[>]\s+|[\*\+\-]\s+|\s*\d+\.\s)(.*)$/);
-          if (match) {
-            return `${match[1]}<span id="LINE${num}"></span>${match[2]}`
-          }
-          return `<span id="LINE${num}"></span>` + li;
-        })
-        .join("\r\n");
+      source = setLineMarkers(source);
     }
 
     const renderCompleted = Promise.withResolvers();
@@ -64,14 +24,18 @@ window.importMarkdown = (() => {
     });
     md.use(window.markdownItAttrs);
     md.use(window.markdownitTaskLists);
-    md.use(window.markdownItEmbedd, { 
+    md.use(window.markdownItEmbedd, {
       config: [
         embedPano360(),
         embedQrCode()
       ]
     });
 
-    container.innerHTML = md.render(source);
+    let html = md.render(source);
+    if (options.lineMark) {
+      html = applyLineMarkers(html);
+    }
+    container.innerHTML = html;
     renderCompleted.resolve();
 
     container.querySelectorAll("script").forEach((oldScript) => {
@@ -114,7 +78,7 @@ window.importMarkdown = (() => {
         }
         acc[key] = value;
         return acc;
-      }, {}); 
+      }, {});
   }
 
   function embedQrCode() {
@@ -151,7 +115,7 @@ window.importMarkdown = (() => {
           }
         }
       }
-      
+
       return new Promise(async (resolve, error) => {
         await data.loading
         QRCode.toDataURL(qrcode.text, options, (err, value) => {
@@ -240,5 +204,75 @@ window.importMarkdown = (() => {
       }
     }
   }
+
+  function setLineMarkers(content) {
+    let tags = []
+    return content.replaceAll("\r\n", "\n")
+      .split("\n")
+      .map((li, num) => {
+        let result = '';
+        while(li.length !== 0) {
+          if (tags.length !== 0) {
+            const tag = tags.pop();
+            let pos = li.indexOf(tag);
+            if (pos !== -1) {
+              result += li.substring(0, pos + tag.length);
+              li = li.substring(pos + tag.length);
+              continue;
+            }
+            tags.push(tag);
+            result += li;
+            li = '';
+            break;
+          }
+
+          let match = li.match(/^(\s+|#+|\-+|\=+|\*+|\>+|\|+)/);
+          match = match || li.match(/^(\d+\.)/)
+          if (match) {
+            result += match[1];
+            li = li.substring(match[1].length);
+            continue;
+          }
+          if (li.startsWith('{%')) {
+            li = li.substring(2);
+            result += "{%";
+            tags.push("%}");
+            continue;
+          }
+          if (li.startsWith('```')) {
+            li = li.substring(3);
+            result += "```";
+            tags.push("```");
+            continue;
+          }
+          match = li.match(/^<(br|hr)(\s*\/)?>/)
+          if (match) {
+            li = li.substring(match[0].length);
+            result += match[0];
+            continue;
+          }
+
+          match = li.match(/^<([^\s\/>]+)([^\/]*)>/)
+          if (match) {
+            li = li.substring(match[0].length);
+            result += match[0];
+            tags.push(`</${match[1]}>`);
+            continue;
+          }
+          break;
+        }
+        if (li !== "") {
+          result += (tags.length === 0)
+            ? `MLINE:${num}:` + li
+            : li
+        }
+        return result;
+      })
+      .join("\r\n");
+  }
+  function applyLineMarkers(html) {
+    return html.replaceAll(/MLINE:(\d+):/g, '<a id="LINE$1"></a>');
+  }
+
   return importMarkdown;
 })();
