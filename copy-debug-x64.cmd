@@ -1,3 +1,4 @@
-xcopy C:\development\NppMarkdownPanel\NppMarkdownPanel\bin\Debug-x64\*.* C:\npp\npp64\plugins\NppMarkdownPanel /c /s /r /d /y /i
-xcopy C:\development\NppMarkdownPanel\MarkdigWrapper\bin\Debug\*.* C:\npp\npp64\plugins\NppMarkdownPanel\lib /c /s /r /d /y /i
-xcopy C:\development\NppMarkdownPanel\Webview2Viewer\bin\Debug\*.* C:\npp\npp64\plugins\NppMarkdownPanel\lib /c /s /r /d /y /i
+@REM pwsh ./build-debug.ps1
+
+xcopy AnotherMarkdown\bin\Debug-x64\*.* "C:\Program Files\Notepad++\plugins\AnotherMarkdown" /c /s /r /d /y /i
+xcopy Webview2Viewer\bin\Debug\*.* "c:\Program Files\Notepad++\plugins\AnotherMarkdown\lib" /c /s /r /d /y /i

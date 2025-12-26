@@ -60,6 +60,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="InterfaceProvider.cs" />
+    <Compile Include="WebResource.cs" />
     <Compile Include="Webview2WebbrowserControl.cs" />
   </ItemGroup>
   <ItemGroup>
