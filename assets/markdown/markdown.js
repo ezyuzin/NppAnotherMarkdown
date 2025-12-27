@@ -1,3 +1,21 @@
+const markdownScripts = [
+ "http://assets.example/detect-charset.js",
+ "http://assets.example/markdown/markdown-it@14.1.0.min.js",
+ "http://assets.example/markdown/markdown-it-attrs@4.1.0.js",
+ "http://assets.example/markdown/markdown-it-task-lists.min.js",
+ "http://assets.example/markdown/markdown-it-embed.js"
+].map(li => {
+  const script = document.createElement("script");
+  script.src = li;
+  script.defer = true;
+  document.head.appendChild(script);
+  return new Promise((resolve) => {
+    script.onload = () => resolve();    
+  });
+});
+
+
+
 window.importMarkdown = (() => {
   let context = {};
 
@@ -6,6 +24,8 @@ window.importMarkdown = (() => {
       lineMark: false,
       ...(options || {})
     }
+    
+    await Promise.all(markdownScripts);
 
     const response = await fetch(url);
     const data = await response.arrayBuffer();
@@ -66,7 +86,8 @@ window.importMarkdown = (() => {
     return script;
   }
   function parseQuery(str) {
-    return ` ${str}`.matchAll(/[\s](\w+)=['"](.*?)['"]/g)
+    return ` ${str}`
+      .matchAll(/[\s](\w+)=['"](.*?)['"]/g)
       .reduce((acc, li) => {
         let key = li[1].trim();
         let value = li[2];
