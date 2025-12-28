@@ -1,13 +1,15 @@
-﻿using System;
+﻿using Microsoft.Web.WebView2.Core;
+using PanelCommon;
+using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Net.Mime;
+using System.Security.Policy;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
 using System.Windows.Forms;
-using Microsoft.Web.WebView2.Core;
-using PanelCommon;
 
 namespace Webview2Viewer
 {
@@ -74,17 +76,20 @@ namespace Webview2Viewer
 
     public void PrepareContentUpdate(bool preserveVerticalScrollPosition)
     {
-      if (!_webViewInitialized) {
+      if (!_webViewInitialized)
+      {
         return;
       }
     }
 
     public void ScrollToElementWithLineNo(int lineNo)
     {
-      if (lineNo <= 0) {
+      if (lineNo <= 0)
+      {
         lineNo = 0;
       }
-      ExecuteWebviewAction(new Action(async () => {
+      ExecuteWebviewAction(new Action(async () =>
+      {
         var script = _scrollScript.Replace("__LINE__", $"LINE{lineNo}");
         await _webView.ExecuteScriptAsync(script);
       }));
@@ -105,7 +110,8 @@ namespace Webview2Viewer
 
     public void SetContent(string content, string documentPath, string assetsPath, string cssFile, bool syncView)
     {
-      if (!_webViewInitialized) {
+      if (!_webViewInitialized)
+      {
         return;
       }
 
@@ -119,35 +125,42 @@ namespace Webview2Viewer
       reload = reload || (_cssFile != cssFile);
       reload = reload || (_syncView != syncView);
 
-      if (reload) {
+      if (reload)
+      {
         _documentUri = "/" + ConvertPathToLocalUri(documentPath);
         _documentPath = documentPath;
         _cssFile = cssFile;
         _syncView = syncView;
 
-        ExecuteWebviewAction(new Action(() => {
-          if (_assetPath != assetsPath) {
+        ExecuteWebviewAction(new Action(() =>
+        {
+          if (_assetPath != assetsPath)
+          {
             _webView.CoreWebView2.SetVirtualHostNameToFolderMapping("assets.example", assetsPath, CoreWebView2HostResourceAccessKind.Allow);
             _assetPath = assetsPath;
           }
-          if (!_webResourceHandlerInitialized) {
+          if (!_webResourceHandlerInitialized)
+          {
             _webView.CoreWebView2.AddWebResourceRequestedFilter("http://local.example/*", CoreWebView2WebResourceContext.All);
             _webView.CoreWebView2.WebResourceRequested += WebResourceRequested;
             _webResourceHandlerInitialized = true;
           }
         }));
 
-        ExecuteWebviewAction(new Action(() => {
+        ExecuteWebviewAction(new Action(() =>
+        {
           content = File.ReadAllText(assetsPath + "/markdown/loader.html");
           // compability with totalcomander markdown viewer plugin
           cssFile = cssFile.Replace("\\", "/");
           assetsPath = assetsPath.Replace("\\", "/");
 
-          if (cssFile.StartsWith(assetsPath + "/")) {
+          if (cssFile.StartsWith(assetsPath + "/"))
+          {
             cssFile = cssFile.Substring((assetsPath).Length + 1);
             content = content.Replace("http://assets.example/markdown/__CSS_NAME__", "http://assets.example/" + UrlPathEncode(cssFile));
           }
-          else {
+          else
+          {
             content = content.Replace("http://assets.example/markdown/__CSS_NAME__", "http://local.example/" + ConvertPathToLocalUri(cssFile));
           }
           content = content.Replace("__BASE_URL__", ConvertPathToLocalUri(baseDir));
@@ -157,8 +170,10 @@ namespace Webview2Viewer
           _webView.NavigateToString(content);
         }));
       }
-      else {
-        ExecuteWebviewAction(new Action(async () => {
+      else
+      {
+        ExecuteWebviewAction(new Action(async () =>
+        {
           await _webView.ExecuteScriptAsync("window.contentChanged();");
         }));
       }
@@ -166,49 +181,101 @@ namespace Webview2Viewer
 
     private void WebResourceRequested(object sender, CoreWebView2WebResourceRequestedEventArgs e)
     {
-      if (e.Response != null) {
+      if (e.Response != null)
+      {
         return;
       }
-      var uri = new Uri(e.Request.Uri);
-      var charset = "";
-      if (uri.DnsSafeHost == "local.example") {
-        byte[] bytes = null;
-        if (_documentUri.Equals(uri.AbsolutePath, StringComparison.InvariantCultureIgnoreCase)) {
-          bytes = _content;
-          charset = "; charset=utf-8";
+      if (e.Request.Method == "GET")
+      {
+        var uri = new Uri(e.Request.Uri);
+        if (uri.DnsSafeHost == "local.example")
+        {
+          HttpGetContent(e, uri);
         }
-        else {
-          var path = HttpUtility.UrlDecode(uri.AbsolutePath);
-          path = Regex.Replace(path, @"^\/disk(\w)\/", "$1:/");
-          if (File.Exists(path)) {
-            bytes = File.ReadAllBytes(path);
-          }
+      }
+      else if (e.Request.Method == "PUT")
+      {
+        var uri = new Uri(e.Request.Uri);
+        if (uri.DnsSafeHost == "local.example")
+        {
+          HttpPutContent(e, uri);
         }
+      }
+    }
 
-        if (bytes != null) {
-          if (WebResource.MimeTypes.TryGetValue(Path.GetExtension(uri.AbsolutePath), out var contentType) == false) {
-            contentType = "application/octet-stream";
-          }
-          var stream = new MemoryStream(bytes);
-          e.Response = _webView.CoreWebView2.Environment.CreateWebResourceResponse(stream, 200, "OK",
-            $"Content-Type: {contentType}{charset}\r\n" +
-            $"Access-Control-Allow-Origin: *"
-          );
-          return;
+    private void HttpPutContent(CoreWebView2WebResourceRequestedEventArgs e, Uri uri)
+    {
+      var charset = "";
+      byte[] bytes = null;
+
+      if (_documentUri.Equals(uri.AbsolutePath, StringComparison.InvariantCultureIgnoreCase))
+      {
+        var path = HttpUtility.UrlDecode(uri.AbsolutePath);
+        path = Regex.Replace(path, @"^\/disk(\w)\/", "$1:/");
+        using (var targetFileStream = File.Open(path, FileMode.OpenOrCreate))
+        {
+          e.Request.Content.CopyTo(targetFileStream);
         }
-        else {
-          var stream = new MemoryStream();
-          e.Response = _webView.CoreWebView2.Environment.CreateWebResourceResponse(stream, 404, "NotFound", $"");
-          return;
+        var response = new MemoryStream(bytes);
+        e.Response = _webView.CoreWebView2.Environment.CreateWebResourceResponse(response, 200, "OK",
+          $"Access-Control-Allow-Origin: *"
+        );
+        return;
+
+      }
+      var stream = new MemoryStream();
+      e.Response = _webView.CoreWebView2.Environment.CreateWebResourceResponse(stream, 404, "NotFound", $"");
+    }
+
+
+    private void HttpGetContent(CoreWebView2WebResourceRequestedEventArgs e, Uri uri)
+    {
+      var charset = "";
+      byte[] bytes = null;
+
+      if (_documentUri.Equals(uri.AbsolutePath, StringComparison.InvariantCultureIgnoreCase))
+      {
+        bytes = _content;
+        charset = "; charset=utf-8";
+      }
+      else
+      {
+        var path = HttpUtility.UrlDecode(uri.AbsolutePath);
+        path = Regex.Replace(path, @"^\/disk(\w)\/", "$1:/");
+        if (File.Exists(path))
+        {
+          bytes = File.ReadAllBytes(path);
         }
+      }
+
+      if (bytes != null)
+      {
+        if (WebResource.MimeTypes.TryGetValue(Path.GetExtension(uri.AbsolutePath), out var contentType) == false)
+        {
+          contentType = "application/octet-stream";
+        }
+        var stream = new MemoryStream(bytes);
+        e.Response = _webView.CoreWebView2.Environment.CreateWebResourceResponse(stream, 200, "OK",
+          $"Content-Type: {contentType}{charset}\r\n" +
+          $"Access-Control-Allow-Origin: *"
+        );
+        return;
+      }
+      else
+      {
+        var stream = new MemoryStream();
+        e.Response = _webView.CoreWebView2.Environment.CreateWebResourceResponse(stream, 404, "NotFound", $"");
+        return;
       }
     }
 
     public void SetZoomLevel(int zoomLevel)
     {
       double zoomFactor = ConvertToZoomFactor(zoomLevel);
-      ExecuteWebviewAction(new Action(() => {
-        if (_webView.ZoomFactor != zoomFactor) {
+      ExecuteWebviewAction(new Action(() =>
+      {
+        if (_webView.ZoomFactor != zoomFactor)
+        {
           _webView.ZoomFactor = zoomFactor;
         }
       }));
@@ -222,14 +289,17 @@ namespace Webview2Viewer
 
     void OnWebBrowser_NavigationStarting(object sender, CoreWebView2NavigationStartingEventArgs e)
     {
-      if (e.Uri.ToString().StartsWith("about:blank")) {
+      if (e.Uri.ToString().StartsWith("about:blank"))
+      {
         e.Cancel = true;
       }
-      else if (!e.Uri.ToString().StartsWith("data:")) {
+      else if (!e.Uri.ToString().StartsWith("data:"))
+      {
         e.Cancel = true;
         var p = new Process();
         var navUri = new Uri(e.Uri);
-        if (navUri.DnsSafeHost == "local.example") {
+        if (navUri.DnsSafeHost == "local.example")
+        {
           return;
         }
         p.StartInfo = new ProcessStartInfo(e.Uri);
@@ -244,7 +314,8 @@ namespace Webview2Viewer
 
     private void ExecuteWebviewAction(Action action)
     {
-      try {
+      try
+      {
         _webView.Invoke(action);
       }
       catch (Exception ex) { }
