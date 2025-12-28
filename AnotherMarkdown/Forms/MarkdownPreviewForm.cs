@@ -1,13 +1,14 @@
-﻿using System;
+﻿using AnotherMarkdown.Entities;
+using PanelCommon;
+using System;
 using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using AnotherMarkdown.Entities;
-using PanelCommon;
 using Webview2Viewer;
+using static AnotherMarkdown.MarkdownPanelController;
 
 namespace AnotherMarkdown.Forms
 {
@@ -65,6 +66,11 @@ namespace AnotherMarkdown.Forms
       if (webview2Instance == null) {
         webbrowserControl = new Webview2WebbrowserControl();
         webbrowserControl.Initialize(settings.ZoomLevel);
+        webbrowserControl.DocumentChanged += (e, args) =>
+        {
+          OnDocumentContentChanged?.Invoke(this, args);
+        };
+
         webview2Instance = webbrowserControl;
       }
       else {
@@ -229,9 +235,10 @@ namespace AnotherMarkdown.Forms
     private Settings _settings;
     private string currentFilePath;
     private IWebbrowserControl webbrowserControl;
-    private IWebbrowserControl webview1Instance;
     private IWebbrowserControl webview2Instance;
     private ActionRef<Message> _wndProcCallback;
     private string _defaultAssetsPath;
+
+    public EventHandler<DocumentContentChanged> OnDocumentContentChanged { get; set; }
   }
 }

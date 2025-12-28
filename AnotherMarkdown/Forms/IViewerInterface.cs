@@ -1,5 +1,6 @@
-﻿using System;
-using AnotherMarkdown.Entities;
+﻿using AnotherMarkdown.Entities;
+using PanelCommon;
+using System;
 
 namespace AnotherMarkdown.Forms
 {
@@ -11,5 +12,7 @@ namespace AnotherMarkdown.Forms
     void RenderMarkdown(string currentText, string filepath);
     void ScrollToElementWithLineNo(int lineNo);
     bool IsValidFileExtension(string filename);
+
+    EventHandler<DocumentContentChanged> OnDocumentContentChanged { get; set; }
   }
 }

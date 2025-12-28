@@ -4,10 +4,9 @@ using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
-using System.Net.Mime;
-using System.Security.Policy;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using System.Web;
 using System.Windows.Forms;
 
@@ -15,6 +14,8 @@ namespace Webview2Viewer
 {
   public class Webview2WebbrowserControl : IWebbrowserControl
   {
+    public EventHandler<DocumentContentChanged> DocumentChanged { get; set; }
+
     public Action<string> StatusTextChangedAction { get; set; }
     public Action RenderingDoneAction { get; set; }
 
@@ -104,6 +105,11 @@ namespace Webview2Viewer
 
     private string ConvertPathToLocalUri(string path)
     {
+      if (path == string.Empty)
+      {
+        return path;
+      }
+
       path = Path.GetFullPath(path).Replace("\\", "/");
       return UrlPathEncode(Regex.Replace(path, @"^(\w):\/", "disk$1/"));
     }
@@ -201,25 +207,34 @@ namespace Webview2Viewer
           HttpPutContent(e, uri);
         }
       }
+      else if (e.Request.Method == "OPTIONS")
+      {
+        var uri = new Uri(e.Request.Uri);
+        if (uri.DnsSafeHost == "local.example")
+        {
+          HttpOptionsContent(e, uri);
+        }
+      }
     }
 
     private void HttpPutContent(CoreWebView2WebResourceRequestedEventArgs e, Uri uri)
     {
-      var charset = "";
-      byte[] bytes = null;
-
       if (_documentUri.Equals(uri.AbsolutePath, StringComparison.InvariantCultureIgnoreCase))
       {
-        var path = HttpUtility.UrlDecode(uri.AbsolutePath);
-        path = Regex.Replace(path, @"^\/disk(\w)\/", "$1:/");
-        using (var targetFileStream = File.Open(path, FileMode.OpenOrCreate))
+        string requestBody;
+        using (var reader = new StreamReader(e.Request.Content, Encoding.UTF8))
         {
-          e.Request.Content.CopyTo(targetFileStream);
+          requestBody = reader.ReadToEnd();
         }
-        var response = new MemoryStream(bytes);
+        var response = new MemoryStream();
         e.Response = _webView.CoreWebView2.Environment.CreateWebResourceResponse(response, 200, "OK",
           $"Access-Control-Allow-Origin: *"
         );
+        (new Task(() => DocumentChanged?.Invoke(this, new DocumentContentChanged
+        {
+          Content = requestBody
+
+        }))).Start();
         return;
 
       }
@@ -268,6 +283,50 @@ namespace Webview2Viewer
         return;
       }
     }
+
+    private void HttpOptionsContent(CoreWebView2WebResourceRequestedEventArgs e, Uri uri)
+    {
+      var charset = "";
+      var allowedMethods = "";
+      var exists = false;
+
+      if (_documentUri.Equals(uri.AbsolutePath, StringComparison.InvariantCultureIgnoreCase))
+      {
+        charset = "; charset=utf-8";
+        allowedMethods = "GET, PUT, OPTIONS";
+        exists = true;
+      }
+      else
+      {
+        var path = HttpUtility.UrlDecode(uri.AbsolutePath);
+        path = Regex.Replace(path, @"^\/disk(\w)\/", "$1:/");
+        allowedMethods = "GET, OPTIONS";
+        exists = (File.Exists(path));
+      }
+
+      if (exists)
+      {
+        if (WebResource.MimeTypes.TryGetValue(Path.GetExtension(uri.AbsolutePath), out var contentType) == false)
+        {
+          contentType = "application/octet-stream";
+        }
+        var stream = new MemoryStream();
+        e.Response = _webView.CoreWebView2.Environment.CreateWebResourceResponse(stream, 204, "OK",
+          $"Content-Type: {contentType}{charset}\r\n" +
+          $"Access-Control-Allow-Methods: {allowedMethods}\r\n" + 
+          $"Access-Control-Allow-Origin: *\r\n" +
+          $"Access-Control-Allow-Headers: *"
+        );
+        return;
+      }
+      else
+      {
+        var stream = new MemoryStream();
+        e.Response = _webView.CoreWebView2.Environment.CreateWebResourceResponse(stream, 404, "NotFound", $"");
+        return;
+      }
+    }
+
 
     public void SetZoomLevel(int zoomLevel)
     {
