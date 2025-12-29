@@ -314,25 +314,28 @@ namespace AnotherMarkdown
 
     private void TogglePanelVisible()
     {
-      if (!initDialog) {
+      if (_ptrNppTbData.HasValue) {
+        Win32.SendMessage(PluginBase.nppData._nppHandle, (uint) NppMsg.NPPM_DMMHIDE, 0, viewerInterface.Handle);
+
+        Marshal.FreeHGlobal(_ptrNppTbData.Value);
+        _viewerInterface.Dispose();
+        _ptrNppTbData = null;
+        _viewerInterface = null;
+      }
+      else { 
         NppTbData _nppTbData = new NppTbData();
         _nppTbData.hClient = viewerInterface.Handle;
         _nppTbData.pszName = Main.PluginTitle;
         _nppTbData.dlgID = idMyDlg;
         _nppTbData.uMask = NppTbMsg.DWS_DF_CONT_RIGHT | NppTbMsg.DWS_ICONTAB | NppTbMsg.DWS_ICONBAR;
-        _nppTbData.hIconTab = (uint)ConvertBitmapToIcon(Resources.markdown_16x16_solid_bmp).Handle;
+        _nppTbData.hIconTab = (uint) ConvertBitmapToIcon(Resources.markdown_16x16_solid_bmp).Handle;
         _nppTbData.pszModuleName = $"{Main.ModuleName}.dll";
-        IntPtr _ptrNppTbData = Marshal.AllocHGlobal(Marshal.SizeOf(_nppTbData));
-        Marshal.StructureToPtr(_nppTbData, _ptrNppTbData, false);
+        _ptrNppTbData = Marshal.AllocHGlobal(Marshal.SizeOf(_nppTbData));
+        Marshal.StructureToPtr(_nppTbData, _ptrNppTbData.Value, false);
 
-        Win32.SendMessage(PluginBase.nppData._nppHandle, (uint)NppMsg.NPPM_DMMREGASDCKDLG, 0, _ptrNppTbData);
-        initDialog = true;
-      }
-      else {
-        Win32.SendMessage(PluginBase.nppData._nppHandle, !isPanelVisible ? (uint)NppMsg.NPPM_DMMSHOW : (uint)NppMsg.NPPM_DMMHIDE, 0, viewerInterface.Handle);
-      }
-      isPanelVisible = !isPanelVisible;
-      if (isPanelVisible) {
+        Win32.SendMessage(PluginBase.nppData._nppHandle, (uint) NppMsg.NPPM_DMMREGASDCKDLG, 0, _ptrNppTbData.Value);
+        Win32.SendMessage(PluginBase.nppData._nppHandle, (uint) NppMsg.NPPM_DMMSHOW, 0, viewerInterface.Handle);
+
         var currentFilePath = notepadPPGateway.GetCurrentFilePath();
         viewerInterface.SetMarkdownFilePath(currentFilePath);
         viewerInterface.UpdateSettings(settings);
@@ -388,19 +391,17 @@ namespace AnotherMarkdown
         case (int)WindowsMessage.WM_NOTIFY:
           var notify = (NMHDR)Marshal.PtrToStructure(m.LParam, typeof(NMHDR));
 
-          var panel = (MarkdownPreviewForm)viewerInterface;
-
           // do not intercept Npp notifications like DMN_CLOSE, etc.
           if (notify.hwndFrom != PluginBase.nppData._nppHandle) {
-            panel.Invalidate(true);
+            viewerInterface.Invalidate(true);
             if (IntPtr.Size == 8) {
-              SetControlParent(panel, Win32.GetWindowLongPtr, Win32.SetWindowLongPtr);
+              SetControlParent(viewerInterface, Win32.GetWindowLongPtr, Win32.SetWindowLongPtr);
             }
             else {
-              SetControlParent(panel, Win32.GetWindowLong, Win32.SetWindowLong);
+              SetControlParent(viewerInterface, Win32.GetWindowLong, Win32.SetWindowLong);
             }
 
-            panel.Update();
+            viewerInterface.Update();
             return;
           }
 
@@ -457,7 +458,7 @@ namespace AnotherMarkdown
     private Timer renderTimer;
     private int idMyDlg = -1;
     private int lastTickCount = 0;
-    private bool isPanelVisible;
+    private bool isPanelVisible => _ptrNppTbData.HasValue;
     private readonly Func<IScintillaGateway> scintillaGatewayFactory;
     private readonly INotepadPPGateway notepadPPGateway;
     private string iniFilePath;
@@ -465,6 +466,7 @@ namespace AnotherMarkdown
     private int currentFirstVisibleLine;
     private bool nppReady;
     private Settings settings;
-    private bool initDialog;
+
+    private IntPtr? _ptrNppTbData;
   }
 }

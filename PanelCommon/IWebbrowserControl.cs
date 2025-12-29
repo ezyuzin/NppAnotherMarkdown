@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace PanelCommon
@@ -21,8 +22,8 @@ namespace PanelCommon
     void Initialize(int zoomLevel);
     void AddToHost(Control host);
     void PrepareContentUpdate(bool preserveVerticalScrollPosition);
-    void SetContent(string content, string documentPath, string assetsPath, string customCssFile, bool syncView);
-    void SetZoomLevel(int zoomLevel);
+    Task SetContent(string content, string documentPath, string assetsPath, string customCssFile, bool syncView);
+    Task SetZoomLevel(int zoomLevel);
     void ScrollToElementWithLineNo(int lineNo);
     string GetRenderingEngineName();
     Bitmap MakeScreenshot();

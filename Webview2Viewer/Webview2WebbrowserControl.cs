@@ -117,11 +117,12 @@ namespace Webview2Viewer
       return UrlPathEncode(Regex.Replace(path, @"^(\w):\/", "disk$1/"));
     }
 
-    public void SetContent(string content, string documentPath, string assetsPath, string cssFile, bool syncView)
+    public async Task SetContent(string content, string documentPath, string assetsPath, string cssFile, bool syncView)
     {
-      if (!_webViewInitialized) {
+      if (_webView == null) {
         return;
       }
+      await _webView.EnsureCoreWebView2Async(_environment);
 
       var baseDir = Path.GetDirectoryName(documentPath);
       var replaceFileMapping = "file://" + baseDir;
@@ -338,8 +339,13 @@ namespace Webview2Viewer
         .CreateWebResourceResponse(new MemoryStream(), 204, "OK", string.Join("\r\n", headers));
     }
 
-    public void SetZoomLevel(int zoomLevel)
+    public async Task SetZoomLevel(int zoomLevel)
     {
+      if (_webView == null) {
+        return;
+      }
+      await _webView.EnsureCoreWebView2Async(_environment);
+
       double zoomFactor = ConvertToZoomFactor(zoomLevel);
       ExecuteWebviewAction(new Action(() => {
         if (_webView.ZoomFactor != zoomFactor) {
