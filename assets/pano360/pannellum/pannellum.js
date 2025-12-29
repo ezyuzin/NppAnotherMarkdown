@@ -3225,7 +3225,7 @@ window.pannellum = (function (window, document, undefined) {
       return config;
     };
 
-    this.setConfig = function (config) {
+    this.updateConfig = function (config) {
       const currentScene = this.getScene();
       const pitch = this.getPitch();
       const hfov = this.getHfov();

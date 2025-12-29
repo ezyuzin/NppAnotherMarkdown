@@ -263,6 +263,7 @@ const editorConstructor = function(container, config, basePath) {
       viewer.closeContextMenu();
       hotspot.id = "deleted-hotspot";
       viewer.removeHotSpot("deleted-hotspot");
+      save();
     });
 
     return menu;
