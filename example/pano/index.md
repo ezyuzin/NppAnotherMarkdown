@@ -1,0 +1,1 @@
+{% pano360 ./index.pano360.json %}

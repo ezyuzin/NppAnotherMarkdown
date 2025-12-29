@@ -5,18 +5,23 @@ A plugin for previewing Markdown files in Notepad++.
 * Lightweight plugin to preview Markdown within Notepad++
 * Displays rendered Markdown HTML using **WebView2 (Edge)**
 
-The plugin is a fork of the [NppMarkdownPanel plugin](https://github.com/mohzy83/NppMarkdownPanel).
+The plugin is a fork of the [NppMarkdownPanel plugin](https://github.com/mohzy83/NppMarkdownPanel) and uses the [markdown-it](https://github.com/markdown-it/markdown-it) library to render Markdown documents into HTML. The advantage of this library is that it is client-side and allows configuring Markdown by enabling or disabling required rendering options **without recompiling or reinstalling the plugin**.
 
-The plugin uses the [markdown-it](https://github.com/markdown-it/markdown-it) library to render Markdown documents into HTML. The advantage of this library is that it is client-side and allows configuring Markdown by enabling or disabling required rendering options **without recompiling or reinstalling the plugin**.
+In addition to the CSS file for the Markdown document, you can customize either the loader (`assets/loader.html`) or the file that directly renders Markdown (`assets/markdown/markdown.js`).
 
-In addition to the CSS file for the Markdown document, you can customize either the loader (`assets/markdown/loader.html`) or the file that directly renders Markdown (`assets/markdown/markdown.js`).
+* Added Markdown Extension for displaying panoramic photos
+  `{% pano360 path_to_scene_file %}`
+* Added a plugin for displaying QR codes; the plugin is not part of the Markdown standard
+  `{% qrcode text="12345" %}`
 
-The assets structure format is compatible with the Lister plugin [EdgeViewer](https://github.com/rg-software/wlx-edge-viewer) for viewing Markdown documents in Total Commander. It is also possible to specify a direct path to the EdgeViewer plugin configuration directory to synchronize rendering settings.
 
 
 ### Current Version
 
-The current version is **0.1.0** it can be found [here](https://github.com/ezyuzin/NppAnotherMarkdown/releases)
+The current version is **0.1.0** and can be found [here](https://github.com/ezyuzin/NppAnotherMarkdown/releases)
+
+{% qrcode text="https://github.com/ezyuzin/NppAnotherMarkdown/releases" %}
+
 
 ## Prerequisites
 - Windows
