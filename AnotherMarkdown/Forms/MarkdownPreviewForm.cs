@@ -1,19 +1,20 @@
-﻿using AnotherMarkdown.Entities;
-using PanelCommon;
-using System;
+﻿using System;
 using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using AnotherMarkdown.Entities;
+using PanelCommon;
 using Webview2Viewer;
-using static AnotherMarkdown.MarkdownPanelController;
 
 namespace AnotherMarkdown.Forms
 {
   public partial class MarkdownPreviewForm : Form, IViewerInterface
   {
+    public EventHandler<DocumentContentChanged> OnDocumentContentChanged { get; set; }
+
     private MarkdownPreviewForm(Settings settings, ActionRef<Message> wndProcCallback)
     {
       InitializeComponent();
@@ -66,8 +67,7 @@ namespace AnotherMarkdown.Forms
       if (webview2Instance == null) {
         webbrowserControl = new Webview2WebbrowserControl();
         webbrowserControl.Initialize(settings.ZoomLevel);
-        webbrowserControl.DocumentChanged += (e, args) =>
-        {
+        webbrowserControl.DocumentChanged += (e, args) => {
           OnDocumentContentChanged?.Invoke(this, args);
         };
 
@@ -238,7 +238,5 @@ namespace AnotherMarkdown.Forms
     private IWebbrowserControl webview2Instance;
     private ActionRef<Message> _wndProcCallback;
     private string _defaultAssetsPath;
-
-    public EventHandler<DocumentContentChanged> OnDocumentContentChanged { get; set; }
   }
 }

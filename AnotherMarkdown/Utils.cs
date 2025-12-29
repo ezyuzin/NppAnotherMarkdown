@@ -43,8 +43,7 @@ namespace AnotherMarkdown
 
       try {
         validFilePath = Path.GetFullPath(file);                             // Convert file name to the full path
-        if (!IsDirectoryWritable(Path.GetDirectoryName(validFilePath)))     // Ensure that it's possible to write to chosen file
-        {
+        if (!IsDirectoryWritable(Path.GetDirectoryName(validFilePath))) {     // Ensure that it's possible to write to chosen file
           errorText = $"Can't save {pWithSpace}file to selected location!";
         }
 
@@ -76,12 +75,7 @@ namespace AnotherMarkdown
     public static bool IsDirectoryWritable(string dirPath, bool throwIfFails = false)
     {
       try {
-        using (FileStream fs = File.Create(
-                    Path.Combine(
-                        dirPath,
-                        Path.GetRandomFileName()),
-                    1,
-                    FileOptions.DeleteOnClose)) { }
+        using (FileStream fs = File.Create(Path.Combine(dirPath, Path.GetRandomFileName()), 1, FileOptions.DeleteOnClose)) { }
         return true;
       }
       catch {
