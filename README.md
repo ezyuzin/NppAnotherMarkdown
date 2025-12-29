@@ -11,7 +11,7 @@ The plugin uses the [markdown-it](https://github.com/markdown-it/markdown-it) li
 
 In addition to the CSS file for the Markdown document, you can customize either the loader (`assets/markdown/loader.html`) or the file that directly renders Markdown (`assets/markdown/markdown.js`).
 
-The script format is compatible with the Lister plugin [EdgeViewer](https://github.com/rg-software/wlx-edge-viewer) for viewing Markdown documents in Total Commander. It is also possible to specify a direct path to the EdgeViewer plugin configuration directory to synchronize rendering settings.
+The assets structure format is compatible with the Lister plugin [EdgeViewer](https://github.com/rg-software/wlx-edge-viewer) for viewing Markdown documents in Total Commander. It is also possible to specify a direct path to the EdgeViewer plugin configuration directory to synchronize rendering settings.
 
 
 ### Current Version
@@ -23,11 +23,11 @@ The current version is **0.1.0** it can be found [here](https://github.com/ezyuz
 - .NET 4.7.2 or higher
 
 ## Installation
-### Installation in Notepad++ 
+#### Installation in Notepad++ 
 The plugin can be installed with the Notepad++ Plugin Admin.
 The name of the plugin is **AnotherMarkdown**.
 
-### Manual Installation
+#### Manual Installation
 Create the folder "AnotherMarkdown" in your Notepad++ plugin folder (e.g. "C:\Program Files\Notepad++\plugins") and extract the appropriate zip (x86 or x64) to it.
 
 It should look like this:  
