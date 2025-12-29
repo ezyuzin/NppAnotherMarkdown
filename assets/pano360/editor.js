@@ -21,7 +21,7 @@ const dependencies = [
   });
 });
 
-const editorConstructor = function(container, config) {
+const editorConstructor = function(container, config, basePath) {
   let viewer;
   let hotspotSeq = 0;
   let onSave = [];
@@ -32,7 +32,8 @@ const editorConstructor = function(container, config) {
       "yaw": viewer.getYaw(),
       "type": "info",
       "text": `Hotspot ${++hotspotSeq}`
-    })
+    });
+    save();
   }
 
   function getDocument() {
@@ -137,6 +138,7 @@ const editorConstructor = function(container, config) {
       hotspot.sceneId = dialog.querySelector('#hotspot-scene').value;
       viewer.updateHotspot(hotspot);
       viewer.closeContextMenu();
+      save();
     });
 
     dialog.querySelector('#cancel')?.addEventListener('click', (e) => {
@@ -161,7 +163,10 @@ const editorConstructor = function(container, config) {
       </div>
       `;
 
-    const panos = await (await (fetch(location + "/pano*.jpg"))).json();
+    const panos = (await (await (fetch(basePath + "/pano*.jpg"))).json())
+      .filter(li => li.type === 'file')
+      .map(li => li.name);
+
     const exists = Object.entries(viewer.getConfig().scenes).map(li => li[1].panorama);
 
     for(let pano of panos) {
@@ -196,6 +201,7 @@ const editorConstructor = function(container, config) {
 
         viewer.addScene(image, options)
         viewer.loadScene(image);
+        save();
       }
       viewer.closeContextMenu();
     });
@@ -220,8 +226,6 @@ const editorConstructor = function(container, config) {
       menuItems.push('<a id="contextmenu-addhotspot">Add HotSpot</a>');
       menuItems.push('<a id="contextmenu-addscene">Add Scene</a>');
       menuItems.push('<a id="contextmenu-defaultsceneview">Set As Default Scene View</a>')
-      menuItems.push('<hr/>')
-      menuItems.push('<a id="contextmenu-save">Save</a>')
     }
 
     menu.innerHTML = menuItems.join("\n");
@@ -240,14 +244,9 @@ const editorConstructor = function(container, config) {
       scene.pitch = viewer.getPitch();
       scene.yaw = viewer.getYaw();
       scene.hfov = viewer.getHfov();
-    });
-
-
-    menu.querySelector('#contextmenu-save')?.addEventListener('click', (e) => {
-      e.preventDefault();
-      viewer.closeContextMenu();
       save();
     });
+
     menu.querySelector('#contextmenu-addhotspot')?.addEventListener('click', (e) => {
       e.preventDefault();
       viewer.closeContextMenu();
@@ -297,6 +296,7 @@ window.viewPlugin = (() => {
     });
   }
 
+  /** url: string */
   const init = async (container, url, changed) => {
     await Promise.all(dependencies);
     const content = await (await fetch(url)).text();
@@ -328,7 +328,9 @@ window.viewPlugin = (() => {
     }
     else {
       container.innerHTML = "";
-      const editor = editorConstructor(container, config);
+      const basePath = url.substring(0, url.lastIndexOf('/'));
+
+      const editor = editorConstructor(container, config, basePath);
       editor.onSave(() => save(editor, url));
       context['current.editor'] = editor;
     }
