@@ -55,7 +55,7 @@ namespace AnotherMarkdown.Forms
       }
     }
 
-    public static IViewerInterface InitViewer(Settings settings, ActionRef<Message> wndProcCallback)
+    public static MarkdownPreviewForm InitViewer(Settings settings, ActionRef<Message> wndProcCallback)
     {
       return new MarkdownPreviewForm(settings, wndProcCallback);
     }

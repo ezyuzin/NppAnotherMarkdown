@@ -17,7 +17,7 @@ namespace AnotherMarkdown
 {
   public class MarkdownPanelController
   {
-    private IViewerInterface viewerInterface
+    private MarkdownPreviewForm viewerInterface
     {
       get {
         if (_viewerInterface == null) {
@@ -215,28 +215,6 @@ namespace AnotherMarkdown
       scintillaGateway.ScrollCaret();
     }
 
-    private void ReloadCurrentDocument()
-    {
-      StringBuilder path = new StringBuilder(Win32.MAX_PATH);
-      Win32.SendMessage(
-          PluginBase.nppData._nppHandle,
-          (uint)NppMsg.NPPM_GETFULLCURRENTPATH,
-          0,
-          path);
-      bool isModified =
-          Win32.SendMessage(
-              PluginBase.nppData._scintillaMainHandle,
-              (uint)SciMsg.SCI_GETMODIFY,
-              0,
-              0) != IntPtr.Zero;
-
-      Win32.SendMessage(
-          PluginBase.nppData._nppHandle,
-          (uint)NppMsg.NPPM_RELOADFILE,
-          isModified ? 1 : 0,
-          path.ToString());
-    }
-
     private void ShowHelp()
     {
       var currentPluginPath = PluginUtils.GetPluginDirectory();
@@ -427,10 +405,6 @@ namespace AnotherMarkdown
           }
 
           switch (notify.code) {
-            case (int)NppMsg.NPPM_RELOADFILE: {
-              ReloadCurrentDocument();
-              break;
-            }
             case (int) DockMgrMsg.DMN_CLOSE: {
               ToolWindowCloseAction();
               break;
@@ -478,7 +452,7 @@ namespace AnotherMarkdown
     private const int renderRefreshRateMilliSeconds = 250;
     private const int inputUpdateThresholdMiliseconds = 200;
 
-    private IViewerInterface _viewerInterface;
+    private MarkdownPreviewForm _viewerInterface;
     private object _lock = new object();
     private Timer renderTimer;
     private int idMyDlg = -1;
