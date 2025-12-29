@@ -14,9 +14,7 @@ const markdownScripts = [
   });
 });
 
-
-
-window.importMarkdown = (() => {
+window.viewPlugin = (() => {
   let context = {};
 
   async function importMarkdown(container, url, options) {

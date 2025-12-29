@@ -3,7 +3,7 @@
     const link = document.createElement("link");
     link.href = cssFile;
     link.rel = 'stylesheet';
-    document.head.appendChild(link);    
+    document.head.appendChild(link);
   }
   function registerScript(src, defer = false) {
     const script = document.createElement("script");
@@ -11,15 +11,15 @@
     script.defer = defer;
     document.head.appendChild(script);
     return script;
-  } 
-  
+  }
+
   function markdown(sourceFile, cssFile, lineMark) {
     registerCss(cssFile);
     const script = registerScript('http://assets.example/markdown/markdown.js');
     let isLoaded = false;
     const documentChanged = () => {
       if (isLoaded) {
-        importMarkdown(document.getElementById("content"), sourceFile, {
+        viewPlugin(document.getElementById("content"), sourceFile, {
           lineMark
         });
       }
@@ -28,24 +28,46 @@
       isLoaded = true;
       documentChanged();
     }
-    
+
     return {
       documentChanged,
-      dispose: () => {}      
+      dispose: () => {}
     }
   }
-  
+
+  function panorama360(sourceFile, cssFile, lineMark) {
+    const script = registerScript('http://assets.example/pano360/editor.js');
+    let isLoaded = false;
+    const documentChanged = (changed = true) => {
+      if (isLoaded) {
+        viewPlugin(document.getElementById("content"), sourceFile, changed);
+      }
+    }
+    script.onload = () => {
+      isLoaded = true;
+      documentChanged();
+    }
+
+    return {
+      documentChanged,
+      dispose: () => {}
+    }
+  }
+
+
   return function(sourceFile, cssFile, lineMark) {
     lineMark = (lineMark == "true" || lineMark === true);
     if (sourceFile.match(/\.(md)$/i)) {
-      return markdown(sourceFile, cssFile, lineMark);      
+      return markdown(sourceFile, cssFile, lineMark);
     }
+    if (sourceFile.match(/\.pano360\.(json)$/i)) {
+      return panorama360(sourceFile);
+    }
+
     console.log(`unsupported file extension: ${sourceFile}`);
     return {
       documentChanged: () => {},
-      dispose: () => {}         
+      dispose: () => {}
     }
   }
 })();
-
-

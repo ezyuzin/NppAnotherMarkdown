@@ -1,0 +1,48 @@
+html,
+body,
+#panorama {
+  height: 100%;
+  margin: 0;
+}
+
+.context-menu {}
+
+.context-menu a,
+.context-menu a:link,
+.context-menu a:visited {
+  display: block;
+  width: auto;
+  padding: 3px;
+}
+
+.context-menu button {
+  inline-size: 40px;
+  block-size: 12px;
+  font-size: 8pt;
+}
+
+.context-menu a:hover {
+  background-color: #474646;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 40px 140px;
+  align-items: center;
+}
+
+.form-row span {
+  text-align: right;
+  white-space: nowrap;
+  margin-right: 3px;
+}
+
+.form-row input,
+.form-row select {
+  width: calc(100% - 5px);
+  font-family: Calibri;
+  font-size: 9pt;
+}
+.form-row select {
+  width: 100%;
+}
