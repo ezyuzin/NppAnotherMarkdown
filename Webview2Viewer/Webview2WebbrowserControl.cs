@@ -152,7 +152,7 @@ namespace Webview2Viewer
         }));
 
         ExecuteWebviewAction(new Action(() => {
-          content = File.ReadAllText(assetsPath + "/markdown/loader.html");
+          content = File.ReadAllText(assetsPath + "/loader.html");
           // compability with totalcomander markdown viewer plugin
           cssFile = cssFile.Replace("\\", "/");
           assetsPath = assetsPath.Replace("\\", "/");
