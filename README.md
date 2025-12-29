@@ -9,8 +9,10 @@ The plugin is a fork of the [NppMarkdownPanel plugin](https://github.com/mohzy83
 
 In addition to the CSS file for the Markdown document, you can customize either the loader (`assets/loader.html`) or the file that directly renders Markdown (`assets/markdown/markdown.js`).
 
-* Added Markdown Extension for displaying panoramic photos
-  `{% pano360 path_to_scene_file %}`
+* Added support for embedding into Markdown documents and editing panoramic photos using [panellum](https://github.com/mpetroff/pannellum) 
+  `{% pano360 path_to_scene_file %}`. Example can be found [here](https://github.com/ezyuzin/NppAnotherMarkdown/tree/master/example/pano).  
+  Open index.pano360.json in Notepad++ for editing, the AnotherMarkdown preview makes scene editing easier..
+  
 * Added a plugin for displaying QR codes; the plugin is not part of the Markdown standard
   `{% qrcode text="12345" %}`
 
