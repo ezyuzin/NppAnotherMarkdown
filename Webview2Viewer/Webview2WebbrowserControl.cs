@@ -1,13 +1,16 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
 using System.Windows.Forms;
 using Microsoft.Web.WebView2.Core;
+using Newtonsoft.Json;
 using PanelCommon;
 
 namespace Webview2Viewer
@@ -96,12 +99,20 @@ namespace Webview2Viewer
       return path;
     }
 
-    private string ConvertPathToLocalUri(string path)
+    private string UriToPath(string path)
     {
       if (path == string.Empty) {
         return path;
       }
+      path = HttpUtility.UrlDecode(path);
+      return Regex.Replace(path, @"^\/disk(\w)\/", "$1:/");
+    }
 
+    private string PathToUri(string path)
+    {
+      if (path == string.Empty) {
+        return path;
+      }
       path = Path.GetFullPath(path).Replace("\\", "/");
       return UrlPathEncode(Regex.Replace(path, @"^(\w):\/", "disk$1/"));
     }
@@ -123,7 +134,7 @@ namespace Webview2Viewer
       reload = reload || (_syncView != syncView);
 
       if (reload) {
-        _documentUri = "/" + ConvertPathToLocalUri(documentPath);
+        _documentUri = "/" + PathToUri(documentPath);
         _documentPath = documentPath;
         _cssFile = cssFile;
         _syncView = syncView;
@@ -151,9 +162,9 @@ namespace Webview2Viewer
             content = content.Replace("http://assets.example/markdown/__CSS_NAME__", "http://assets.example/" + UrlPathEncode(cssFile));
           }
           else {
-            content = content.Replace("http://assets.example/markdown/__CSS_NAME__", "http://local.example/" + ConvertPathToLocalUri(cssFile));
+            content = content.Replace("http://assets.example/markdown/__CSS_NAME__", "http://local.example/" + PathToUri(cssFile));
           }
-          content = content.Replace("__BASE_URL__", ConvertPathToLocalUri(baseDir));
+          content = content.Replace("__BASE_URL__", PathToUri(baseDir));
           content = content.Replace("__CSS_NAME__", cssFile);
           content = content.Replace("__WITH_LINE_MARKER__", syncView ? "true" : "false");
           content = content.Replace("__MD_FILENAME__", _documentUri.Substring(1));
@@ -192,97 +203,139 @@ namespace Webview2Viewer
       }
     }
 
-    private void HttpPutContent(CoreWebView2WebResourceRequestedEventArgs e, Uri uri)
+    private void HttpPutContent(CoreWebView2WebResourceRequestedEventArgs e, Uri requestUri)
     {
-      if (_documentUri.Equals(uri.AbsolutePath, StringComparison.InvariantCultureIgnoreCase)) {
-        string requestBody;
-        using (var reader = new StreamReader(e.Request.Content, Encoding.UTF8)) {
-          requestBody = reader.ReadToEnd();
-        }
-        var response = new MemoryStream();
-        e.Response = _webView.CoreWebView2.Environment
-          .CreateWebResourceResponse(response, 200, "OK",
-          $"Access-Control-Allow-Origin: *");
-        (new Task(() => DocumentChanged?.Invoke(this, new DocumentContentChanged
-        {
-          Content = requestBody
-        }))).Start();
+      if (!_documentUri.Equals(requestUri.AbsolutePath, StringComparison.InvariantCultureIgnoreCase)) {
+        Error404(e);
         return;
       }
-      var stream = new MemoryStream();
-      e.Response = _webView.CoreWebView2.Environment.CreateWebResourceResponse(stream, 404, "NotFound", $"");
+
+      var headers = new List<string> {
+        "Access-Control-Allow-Origin: *"
+      };
+
+      string requestBody;
+      using (var reader = new StreamReader(e.Request.Content, Encoding.UTF8)) {
+        requestBody = reader.ReadToEnd();
+      }
+
+      e.Response = _webView.CoreWebView2
+        .Environment
+        .CreateWebResourceResponse(new MemoryStream(), 200, "OK", string.Join("\r\n", headers));
+
+      new Task(() => DocumentChanged?.Invoke(this, new DocumentContentChanged {
+        Content = requestBody
+      })).Start();
     }
 
-    private void HttpGetContent(CoreWebView2WebResourceRequestedEventArgs e, Uri uri)
+    private void HttpGetContent(CoreWebView2WebResourceRequestedEventArgs e, Uri requestUri)
     {
       var charset = "";
       byte[] bytes = null;
+      var headers = new List<string> {
+        "Access-Control-Allow-Origin: *"
+      };
 
-      if (_documentUri.Equals(uri.AbsolutePath, StringComparison.InvariantCultureIgnoreCase)) {
+      if (Regex.IsMatch(requestUri.AbsolutePath, @"\*\.(\*|.+)$")) {
+        var path = UriToPath(requestUri.AbsolutePath);
+        var mask = Path.GetFileName(path);
+
+        var dir = Path.GetDirectoryName(path);
+        if (Directory.Exists(dir)) {
+          var files = Directory.GetFiles(dir, mask, SearchOption.TopDirectoryOnly)
+            .Select(li => new { name = Path.GetFileName(li), type = "file" })
+            .ToArray();
+
+          Json(e, headers, files);
+          return;
+        }
+        Error404(e);
+        return;
+      }
+
+      if (_documentUri.Equals(requestUri.AbsolutePath, StringComparison.InvariantCultureIgnoreCase)) {
         bytes = _content;
         charset = "; charset=utf-8";
       }
       else {
-        var path = HttpUtility.UrlDecode(uri.AbsolutePath);
-        path = Regex.Replace(path, @"^\/disk(\w)\/", "$1:/");
+        var path = UriToPath(requestUri.AbsolutePath);
         if (File.Exists(path)) {
           bytes = File.ReadAllBytes(path);
         }
       }
 
-      if (bytes != null) {
-        if (WebResource.MimeTypes.TryGetValue(Path.GetExtension(uri.AbsolutePath), out var contentType) == false) {
-          contentType = "application/octet-stream";
-        }
-        var stream = new MemoryStream(bytes);
-        e.Response = _webView.CoreWebView2.Environment
-          .CreateWebResourceResponse(stream, 200, "OK",
-          $"Content-Type: {contentType}{charset}\r\n" + $"Access-Control-Allow-Origin: *");
+      if (bytes == null) {
+        Error404(e);
         return;
+      }
+
+      if (WebResource.MimeTypes.TryGetValue(Path.GetExtension(requestUri.AbsolutePath), out var contentType)) {
+        headers.Add($"Content-Type: {contentType}{charset}");
       }
       else {
-        var stream = new MemoryStream();
-        e.Response = _webView.CoreWebView2.Environment.CreateWebResourceResponse(stream, 404, "NotFound", $"");
-        return;
+        headers.Add($"Content-Type: application/octet-stream");
       }
+
+      e.Response = _webView.CoreWebView2
+        .Environment
+        .CreateWebResourceResponse(new MemoryStream(bytes), 200, "OK", string.Join("\r\n", headers));
+    }
+
+    private void Json<TModel>(CoreWebView2WebResourceRequestedEventArgs e, List<string> headers, TModel data)
+    {
+      headers.Add("Content-Type: application/json; charset=utf-8");
+      e.Response = _webView.CoreWebView2
+        .Environment
+        .CreateWebResourceResponse(ToJson(data), 200, "OK", string.Join("\r\n", headers));
+    }
+
+    private static MemoryStream ToJson<TData>(TData files, MemoryStream stream = null)
+    {
+      if (stream == null) {
+        stream = new MemoryStream();
+      }
+      var serializer = new JsonSerializer();
+      using (var writter = new StreamWriter(stream, Encoding.UTF8, 2048, true)) {
+        serializer.Serialize(writter, files);
+        writter.Flush();
+      }
+      return stream;
+    }
+
+    private void Error404(CoreWebView2WebResourceRequestedEventArgs e)
+    {
+      e.Response = _webView.CoreWebView2.Environment.CreateWebResourceResponse(new MemoryStream(), 404, "NotFound", $"");
     }
 
     private void HttpOptionsContent(CoreWebView2WebResourceRequestedEventArgs e, Uri uri)
     {
       var charset = "";
-      var allowedMethods = "";
-      var exists = false;
+      var headers = new List<string> {
+        "Access-Control-Allow-Origin: *",
+        "Access-Control-Allow-Headers: *"
+      };
 
       if (_documentUri.Equals(uri.AbsolutePath, StringComparison.InvariantCultureIgnoreCase)) {
         charset = "; charset=utf-8";
-        allowedMethods = "GET, PUT, OPTIONS";
-        exists = true;
+        headers.Add("Access-Control-Allow-Methods: GET, PUT, OPTIONS");
       }
       else {
         var path = HttpUtility.UrlDecode(uri.AbsolutePath);
         path = Regex.Replace(path, @"^\/disk(\w)\/", "$1:/");
-        allowedMethods = "GET, OPTIONS";
-        exists = (File.Exists(path));
+        if (!File.Exists(path)) {
+          Error404(e);
+          return;
+        }
+        headers.Add("Access-Control-Allow-Methods: GET, OPTIONS");
       }
 
-      if (exists) {
-        if (WebResource.MimeTypes.TryGetValue(Path.GetExtension(uri.AbsolutePath), out var contentType) == false) {
-          contentType = "application/octet-stream";
-        }
-        var stream = new MemoryStream();
-        e.Response = _webView.CoreWebView2.Environment
-          .CreateWebResourceResponse(stream, 204, "OK",
-          $"Content-Type: {contentType}{charset}\r\n"
-            + $"Access-Control-Allow-Methods: {allowedMethods}\r\n"
-            + $"Access-Control-Allow-Origin: *\r\n"
-            + $"Access-Control-Allow-Headers: *");
-        return;
+      if (WebResource.MimeTypes.TryGetValue(Path.GetExtension(uri.AbsolutePath), out var contentType) == false) {
+        contentType = "application/octet-stream";
       }
-      else {
-        var stream = new MemoryStream();
-        e.Response = _webView.CoreWebView2.Environment.CreateWebResourceResponse(stream, 404, "NotFound", $"");
-        return;
-      }
+      headers.Add($"Content-Type: {contentType}{charset}");
+
+      e.Response = _webView.CoreWebView2.Environment
+        .CreateWebResourceResponse(new MemoryStream(), 204, "OK", string.Join("\r\n", headers));
     }
 
     public void SetZoomLevel(int zoomLevel)
@@ -328,17 +381,19 @@ namespace Webview2Viewer
       try {
         _webView.Invoke(action);
       }
-      catch (Exception ex) { }
+      catch (Exception) { }
     }
 
     const string CONFIG_FOLDER_NAME = "MarkdownPanel";
     const string _scrollScript = @"
+var element = document.getElementById('__LINE__');
+if (!element) {
+  return;
+}
 var spacer = document.getElementById('spacer');
 if (spacer) {
   spacer.parentElement.removeChild(spacer);
 }
-
-var element = document.getElementById('__LINE__');
 var rect = element.getBoundingClientRect();
 var elementTop = rect.top + window.pageYOffset;
 
@@ -369,6 +424,7 @@ window.scrollTo({
     private string _assetPath;
     private string _documentPath;
     private string _documentUri;
+
     private bool _syncView;
     private CoreWebView2Environment _environment = null;
   }
