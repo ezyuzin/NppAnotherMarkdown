@@ -379,7 +379,9 @@ namespace Webview2Viewer
     private void ExecuteWebviewAction(Action action)
     {
       try {
-        _webView.Invoke(action);
+        if (_webViewInitialized) {
+          _webView.Invoke(action);
+        }
       }
       catch (Exception) { }
     }
