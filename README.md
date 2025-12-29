@@ -5,13 +5,12 @@ A plugin for previewing Markdown files in Notepad++.
 * Lightweight plugin to preview Markdown within Notepad++
 * Displays rendered Markdown HTML using **WebView2 (Edge)**
 
-The plugin is a fork of the [NppMarkdownPanel plugin](https://github.com/mohzy83/NppMarkdownPanel) and uses the [markdown-it](https://github.com/markdown-it/markdown-it) library to render Markdown documents into HTML. The advantage of this library is that it is client-side and allows configuring Markdown by enabling or disabling required rendering options **without recompiling or reinstalling the plugin**.
+The plugin is a fork of the [NppMarkdownPanel plugin](https://github.com/mohzy83/NppMarkdownPanel) and uses the [markdown-it](https://github.com/markdown-it/markdown-it) javascript library to render Markdown documents into HTML and allows configuring used Markdown extensions **without recompiling or reinstalling the plugin** (just edit `assets/markdown/markdown.js`).
 
-In addition to the CSS file for the Markdown document, you can customize either the loader (`assets/loader.html`) or the file that directly renders Markdown (`assets/markdown/markdown.js`).
+Aslo,
 
-* Added support for embedding into Markdown documents and editing panoramic photos using [panellum](https://github.com/mpetroff/pannellum) 
-  `{% pano360 path_to_scene_file %}`. Example can be found [here](https://github.com/ezyuzin/NppAnotherMarkdown/tree/master/example/pano).  
-  Open index.pano360.json in Notepad++ for editing, the AnotherMarkdown preview makes scene editing easier..
+* Added support for editing and dispay into Markdown documents 360-degree panoramic photos using [panellum](https://github.com/mpetroff/pannellum) `{% pano360 path_to_scene %}`. Example can be found [here](https://github.com/ezyuzin/NppAnotherMarkdown/tree/master/example/pano).  
+  Open index.pano360.json in Notepad++ for editing, the AnotherMarkdown preview makes scene editing easier.
   
 * Added a plugin for displaying QR codes; the plugin is not part of the Markdown standard
   `{% qrcode text="12345" %}`
