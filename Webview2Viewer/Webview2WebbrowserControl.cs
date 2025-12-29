@@ -388,34 +388,36 @@ namespace Webview2Viewer
 
     const string CONFIG_FOLDER_NAME = "MarkdownPanel";
     const string _scrollScript = @"
-var element = document.getElementById('__LINE__');
-if (!element) {
-  return;
-}
-var spacer = document.getElementById('spacer');
-if (spacer) {
-  spacer.parentElement.removeChild(spacer);
-}
-var rect = element.getBoundingClientRect();
-var elementTop = rect.top + window.pageYOffset;
+(function() {
+  var element = document.getElementById('__LINE__');
+  if (!element) {
+    return;
+  }
+  var spacer = document.getElementById('spacer');
+  if (spacer) {
+    spacer.parentElement.removeChild(spacer);
+  }
+  var rect = element.getBoundingClientRect();
+  var elementTop = rect.top + window.pageYOffset;
 
-var requiredScrollTop = elementTop;
-var maxScrollTop = document.documentElement.scrollHeight - window.innerHeight;
-if (requiredScrollTop > maxScrollTop) {
-  var extraHeight = requiredScrollTop - maxScrollTop;
-  var spacer = document.createElement('div');
-  spacer.id = 'spacer';
-  spacer.style.height = extraHeight + 'px';
-  spacer.style.width = '1px';
-  spacer.style.pointerEvents = 'none';
+  var requiredScrollTop = elementTop;
+  var maxScrollTop = document.documentElement.scrollHeight - window.innerHeight;
+  if (requiredScrollTop > maxScrollTop) {
+    var extraHeight = requiredScrollTop - maxScrollTop;
+    var spacer = document.createElement('div');
+    spacer.id = 'spacer';
+    spacer.style.height = extraHeight + 'px';
+    spacer.style.width = '1px';
+    spacer.style.pointerEvents = 'none';
 
-  document.body.appendChild(spacer);
-}
+    document.body.appendChild(spacer);
+  }
 
-window.scrollTo({
-  top: requiredScrollTop,
-  behavior: 'smooth'
-});
+  window.scrollTo({
+    top: requiredScrollTop,
+    behavior: 'smooth'
+  });
+})();
 ";
 
     private Microsoft.Web.WebView2.WinForms.WebView2 _webView;
