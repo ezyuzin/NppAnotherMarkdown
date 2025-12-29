@@ -26,10 +26,6 @@ const editorConstructor = function(container, config) {
   let hotspotSeq = 0;
   let onSave = [];
 
-  function setDocument(config) {
-    viewer.setConfig(config);
-  }
-
   function addHotspot() {
     viewer.addHotSpot({
       "pitch": viewer.getPitch(),
@@ -278,7 +274,6 @@ const editorConstructor = function(container, config) {
 
   return {
     viewer,
-    setDocument,
     getDocument,
     onSave: (handler) => onSave.push(handler)
   }
@@ -309,7 +304,6 @@ window.viewPlugin = (() => {
       return;
     }
 
-    const updateView = (changed && context['current.editor'] && context['current.url'] === url);
     context['current.content'] = content;
     context['current.url'] = url;
 
@@ -317,8 +311,20 @@ window.viewPlugin = (() => {
     config.default.basePath = "./";
     config.default.hotSpotDebug = true;
 
+    let updateView = false;
+    if (changed && context['current.editor'] && context['current.url'] === url) {
+      const viewer = context['current.editor'].viewer;
+      const currentScene = viewer.getScene();
+      if (config.scenes && config.scenes[currentScene]) {
+        const current = viewer.getConfig();
+        if (current.scenes[currentScene].panorama === config.scenes[currentScene].panorama) {
+          updateView = true;
+        }
+      }
+    }
+
     if (updateView) {
-      context['current.editor'].setDocument(config);
+      context['current.editor'].viewer.updateConfig(config);
     }
     else {
       container.innerHTML = "";
