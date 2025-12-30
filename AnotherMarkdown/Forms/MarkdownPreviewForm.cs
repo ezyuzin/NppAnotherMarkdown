@@ -74,9 +74,6 @@ namespace AnotherMarkdown.Forms
       }
 
       _webView.AddToHost(panel1);
-      _webView.RenderingDoneAction = () => {
-        HideScreenshotAndShowBrowser();
-      };
       _webView.StatusTextChangedAction = (status) => {
         toolStripStatusLabel1.Text = status;
       };
@@ -105,14 +102,6 @@ namespace AnotherMarkdown.Forms
           catch (Exception) { }
         });
         _renderTask.Start(context);
-      }
-    }
-
-    private void HideScreenshotAndShowBrowser()
-    {
-      if (pictureBoxScreenshot.Image != null) {
-        pictureBoxScreenshot.Visible = false;
-        pictureBoxScreenshot.Image = null;
       }
     }
 
