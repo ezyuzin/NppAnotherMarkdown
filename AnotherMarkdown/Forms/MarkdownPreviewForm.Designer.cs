@@ -10,8 +10,15 @@
     /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
     protected override void Dispose(bool disposing)
     {
-      if (disposing && (components != null)) {
-        components.Dispose();
+      if (disposing) {
+        if (_webView != null) {
+          _webView.Dispose();
+          _webView = null;
+        }
+        if (components != null) {
+          components.Dispose();
+          components = null;
+        }
       }
       base.Dispose(disposing);
     }
@@ -27,7 +34,6 @@
       this.panelPreview = new System.Windows.Forms.Panel();
       this.toolStripContainer1 = new System.Windows.Forms.ToolStripContainer();
       this.panel1 = new System.Windows.Forms.Panel();
-      this.pictureBoxScreenshot = new System.Windows.Forms.PictureBox();
       this.tbPreview = new System.Windows.Forms.ToolStrip();
       this.btnSaveHtml = new System.Windows.Forms.ToolStripButton();
       this.statusStrip2 = new System.Windows.Forms.StatusStrip();
@@ -36,7 +42,6 @@
       this.toolStripContainer1.ContentPanel.SuspendLayout();
       this.toolStripContainer1.TopToolStripPanel.SuspendLayout();
       this.toolStripContainer1.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBoxScreenshot)).BeginInit();
       this.tbPreview.SuspendLayout();
       this.statusStrip2.SuspendLayout();
       this.SuspendLayout();
@@ -58,7 +63,6 @@
       // 
       // toolStripContainer1.ContentPanel
       // 
-      this.toolStripContainer1.ContentPanel.Controls.Add(this.pictureBoxScreenshot);
       this.toolStripContainer1.ContentPanel.Controls.Add(this.panel1);
       this.toolStripContainer1.ContentPanel.Size = new System.Drawing.Size(811, 573);
       this.toolStripContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -82,24 +86,12 @@
       this.panel1.Size = new System.Drawing.Size(811, 573);
       this.panel1.TabIndex = 2;
       // 
-      // pictureBoxScreenshot
-      // 
-      this.pictureBoxScreenshot.Dock = System.Windows.Forms.DockStyle.Fill;
-      this.pictureBoxScreenshot.Image = global::AnotherMarkdown.Properties.Resources.markdown_16x16_solid_bmp;
-      this.pictureBoxScreenshot.Location = new System.Drawing.Point(0, 0);
-      this.pictureBoxScreenshot.Name = "pictureBoxScreenshot";
-      this.pictureBoxScreenshot.Size = new System.Drawing.Size(811, 573);
-      this.pictureBoxScreenshot.TabIndex = 1;
-      this.pictureBoxScreenshot.TabStop = false;
-      this.pictureBoxScreenshot.Visible = false;
-      // 
       // tbPreview
       // 
       this.tbPreview.Dock = System.Windows.Forms.DockStyle.None;
       this.tbPreview.ImageScalingSize = new System.Drawing.Size(20, 20);
-      this.tbPreview.Items
-        .AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.btnSaveHtml });
+      this.tbPreview.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.btnSaveHtml});
       this.tbPreview.Location = new System.Drawing.Point(0, 0);
       this.tbPreview.Name = "tbPreview";
       this.tbPreview.Size = new System.Drawing.Size(811, 27);
@@ -118,9 +110,8 @@
       // statusStrip2
       // 
       this.statusStrip2.ImageScalingSize = new System.Drawing.Size(20, 20);
-      this.statusStrip2.Items
-        .AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.toolStripStatusLabel1 });
+      this.statusStrip2.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.toolStripStatusLabel1});
       this.statusStrip2.Location = new System.Drawing.Point(0, 578);
       this.statusStrip2.Name = "statusStrip2";
       this.statusStrip2.Size = new System.Drawing.Size(813, 24);
@@ -149,13 +140,13 @@
       this.toolStripContainer1.TopToolStripPanel.PerformLayout();
       this.toolStripContainer1.ResumeLayout(false);
       this.toolStripContainer1.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBoxScreenshot)).EndInit();
       this.tbPreview.ResumeLayout(false);
       this.tbPreview.PerformLayout();
       this.statusStrip2.ResumeLayout(false);
       this.statusStrip2.PerformLayout();
       this.ResumeLayout(false);
       this.PerformLayout();
+
     }
         #endregion
 
@@ -164,7 +155,6 @@
     /// </summary>
     private System.ComponentModel.IContainer components = null;
     private System.Windows.Forms.Panel panelPreview;
-    private System.Windows.Forms.PictureBox pictureBoxScreenshot;
     private System.Windows.Forms.ToolStripContainer toolStripContainer1;
     private System.Windows.Forms.ToolStrip tbPreview;
     private System.Windows.Forms.ToolStripButton btnSaveHtml;

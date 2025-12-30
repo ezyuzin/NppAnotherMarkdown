@@ -69,6 +69,7 @@ h1 {
 h2 {
   font-size: 12pt;
   font-weight: bold;
+  margin-top: 15px;
   padding-bottom: 8px;
   margin-bottom: 13px !important;
   border-bottom: 1px solid #cccccc;
@@ -77,6 +78,7 @@ h2 {
 h3 {
   font-size: 11pt;
   font-weight: bold;
+  margin-top: 15px;
   padding-bottom: 6px;
   margin-bottom: 11px !important;
   border-bottom: 1px solid #cccccc;    
@@ -175,7 +177,10 @@ body > h1:first-child + h2 {
   padding-top: 0;
 }
 
-body > h3:first-child, body &gt; h4:first-child, body &gt; h5:first-child, body &gt; h6:first-child {
+body > h3:first-child,
+body > h4:first-child, 
+body > h5:first-child, 
+body > h6:first-child {
   margin-top: 0;
   padding-top: 0;
 }

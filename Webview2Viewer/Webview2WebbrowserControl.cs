@@ -15,7 +15,7 @@ using PanelCommon;
 
 namespace Webview2Viewer
 {
-  public class Webview2WebbrowserControl : IWebbrowserControl
+  public class Webview2WebbrowserControl : IWebbrowserControl, IDisposable
   {
     public EventHandler<DocumentContentChanged> DocumentChanged { get; set; }
     public Action<string> StatusTextChangedAction { get; set; }
@@ -26,7 +26,13 @@ namespace Webview2Viewer
       _webView = null;
     }
 
-    public async void Initialize(int zoomLevel)
+    public void Dispose()
+    {
+      _webView?.Dispose();
+      _webView = null;
+    }
+
+    public async Task InitializeAsync(int zoomLevel)
     {
       var cacheDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), CONFIG_FOLDER_NAME, "webview2");
       //var props = new Microsoft.Web.WebView2.WinForms.CoreWebView2CreationProperties();
@@ -46,7 +52,6 @@ namespace Webview2Viewer
       _webView.Dock = DockStyle.Fill;
       _webView.TabIndex = 0;
       _webView.NavigationStarting += OnWebBrowser_NavigationStarting;
-      _webView.NavigationCompleted += WebView_NavigationCompleted;
       _webView.ZoomFactor = ConvertToZoomFactor(zoomLevel);
 
       _webViewInitialized = true;
@@ -57,7 +62,6 @@ namespace Webview2Viewer
       host.Controls.Add(_webView);
     }
 
-    private void WebView_NavigationCompleted(object sender, CoreWebView2NavigationCompletedEventArgs e) { }
     /*public async Task SetScreenshot(PictureBox pictureBox)
     {
         pictureBox.Image = null;
@@ -68,11 +72,6 @@ namespace Webview2Viewer
         pictureBox.Image = screenshot;
         pictureBox.Visible = true;
     }*/
-
-    public Bitmap MakeScreenshot()
-    {
-      return null;
-    }
 
     public void PrepareContentUpdate(bool preserveVerticalScrollPosition)
     {
@@ -117,11 +116,13 @@ namespace Webview2Viewer
       return UrlPathEncode(Regex.Replace(path, @"^(\w):\/", "disk$1/"));
     }
 
-    public void SetContent(string content, string documentPath, string assetsPath, string cssFile, bool syncView)
+    public async Task SetContent(string content, string documentPath, string assetsPath, string cssFile, bool syncView)
     {
-      if (!_webViewInitialized) {
+      if (_webView == null) {
         return;
       }
+
+      await _webView.EnsureCoreWebView2Async(_environment);
 
       var baseDir = Path.GetDirectoryName(documentPath);
       var replaceFileMapping = "file://" + baseDir;
@@ -152,7 +153,7 @@ namespace Webview2Viewer
         }));
 
         ExecuteWebviewAction(new Action(() => {
-          content = File.ReadAllText(assetsPath + "/markdown/loader.html");
+          content = File.ReadAllText(assetsPath + "/loader.html");
           // compability with totalcomander markdown viewer plugin
           cssFile = cssFile.Replace("\\", "/");
           assetsPath = assetsPath.Replace("\\", "/");
@@ -338,8 +339,13 @@ namespace Webview2Viewer
         .CreateWebResourceResponse(new MemoryStream(), 204, "OK", string.Join("\r\n", headers));
     }
 
-    public void SetZoomLevel(int zoomLevel)
+    public async Task SetZoomLevel(int zoomLevel)
     {
+      if (_webView == null) {
+        return;
+      }
+      await _webView.EnsureCoreWebView2Async(_environment);
+
       double zoomFactor = ConvertToZoomFactor(zoomLevel);
       ExecuteWebviewAction(new Action(() => {
         if (_webView.ZoomFactor != zoomFactor) {
@@ -371,49 +377,48 @@ namespace Webview2Viewer
       }
     }
 
-    public string GetRenderingEngineName()
-    {
-      return "EDGE";
-    }
-
     private void ExecuteWebviewAction(Action action)
     {
       try {
-        _webView.Invoke(action);
+        if (_webViewInitialized) {
+          _webView.Invoke(action);
+        }
       }
       catch (Exception) { }
     }
 
     const string CONFIG_FOLDER_NAME = "MarkdownPanel";
     const string _scrollScript = @"
-var element = document.getElementById('__LINE__');
-if (!element) {
-  return;
-}
-var spacer = document.getElementById('spacer');
-if (spacer) {
-  spacer.parentElement.removeChild(spacer);
-}
-var rect = element.getBoundingClientRect();
-var elementTop = rect.top + window.pageYOffset;
+(function() {
+  var element = document.getElementById('__LINE__');
+  if (!element) {
+    return;
+  }
+  var spacer = document.getElementById('spacer');
+  if (spacer) {
+    spacer.parentElement.removeChild(spacer);
+  }
+  var rect = element.getBoundingClientRect();
+  var elementTop = rect.top + window.pageYOffset;
 
-var requiredScrollTop = elementTop;
-var maxScrollTop = document.documentElement.scrollHeight - window.innerHeight;
-if (requiredScrollTop > maxScrollTop) {
-  var extraHeight = requiredScrollTop - maxScrollTop;
-  var spacer = document.createElement('div');
-  spacer.id = 'spacer';
-  spacer.style.height = extraHeight + 'px';
-  spacer.style.width = '1px';
-  spacer.style.pointerEvents = 'none';
+  var requiredScrollTop = elementTop;
+  var maxScrollTop = document.documentElement.scrollHeight - window.innerHeight;
+  if (requiredScrollTop > maxScrollTop) {
+    var extraHeight = requiredScrollTop - maxScrollTop;
+    var spacer = document.createElement('div');
+    spacer.id = 'spacer';
+    spacer.style.height = extraHeight + 'px';
+    spacer.style.width = '1px';
+    spacer.style.pointerEvents = 'none';
 
-  document.body.appendChild(spacer);
-}
+    document.body.appendChild(spacer);
+  }
 
-window.scrollTo({
-  top: requiredScrollTop,
-  behavior: 'smooth'
-});
+  window.scrollTo({
+    top: requiredScrollTop,
+    behavior: 'smooth'
+  });
+})();
 ";
 
     private Microsoft.Web.WebView2.WinForms.WebView2 _webView;
