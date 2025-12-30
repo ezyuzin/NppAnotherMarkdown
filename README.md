@@ -9,17 +9,18 @@ The plugin is a fork of the [NppMarkdownPanel plugin](https://github.com/mohzy83
 
 Also,
 
-* Added support for editing and dispay 360-degree panoramic photos into Markdown. Extension uses [panellum](https://github.com/mpetroff/pannellum) library and invokes with markdown markup syntax `{% pano360 path_to_scene %}`. Example can be found [here](https://github.com/ezyuzin/NppAnotherMarkdown/tree/master/example/pano).  
+* Added support for editing and view interactive 360-degree panoramic photos into Markdown. Extension uses [panellum](https://github.com/mpetroff/pannellum) library and invokes with markdown markup syntax `{% pano360 path_to_scene %}`. Example can be found [here](https://github.com/ezyuzin/NppAnotherMarkdown/tree/master/example/pano).  
   Open index.pano360.json in Notepad++ for editing, the AnotherMarkdown preview makes scene editing easier.
   
 * Added a plugin for displaying QR codes
   `{% qrcode text="12345" %}`
 
+![](example/pano/preview.gif)
 
 
 ### Current Version
 
-The current version is **0.1.0** and can be found [here](https://github.com/ezyuzin/NppAnotherMarkdown/releases)
+The current version is **0.1.1** and can be found [here](https://github.com/ezyuzin/NppAnotherMarkdown/releases)
 
 {% qrcode text="https://github.com/ezyuzin/NppAnotherMarkdown/releases" %}
 
