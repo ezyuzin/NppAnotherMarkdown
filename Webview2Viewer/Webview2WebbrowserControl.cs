@@ -1,18 +1,23 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using System.Web;
 using System.Windows.Forms;
 using Microsoft.Web.WebView2.Core;
+using Newtonsoft.Json;
 using PanelCommon;
 
 namespace Webview2Viewer
 {
-  public class Webview2WebbrowserControl : IWebbrowserControl
+  public class Webview2WebbrowserControl : IWebbrowserControl, IDisposable
   {
+    public EventHandler<DocumentContentChanged> DocumentChanged { get; set; }
     public Action<string> StatusTextChangedAction { get; set; }
     public Action RenderingDoneAction { get; set; }
 
@@ -21,7 +26,13 @@ namespace Webview2Viewer
       _webView = null;
     }
 
-    public async void Initialize(int zoomLevel)
+    public void Dispose()
+    {
+      _webView?.Dispose();
+      _webView = null;
+    }
+
+    public async Task InitializeAsync(int zoomLevel)
     {
       var cacheDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), CONFIG_FOLDER_NAME, "webview2");
       //var props = new Microsoft.Web.WebView2.WinForms.CoreWebView2CreationProperties();
@@ -41,7 +52,6 @@ namespace Webview2Viewer
       _webView.Dock = DockStyle.Fill;
       _webView.TabIndex = 0;
       _webView.NavigationStarting += OnWebBrowser_NavigationStarting;
-      _webView.NavigationCompleted += WebView_NavigationCompleted;
       _webView.ZoomFactor = ConvertToZoomFactor(zoomLevel);
 
       _webViewInitialized = true;
@@ -50,26 +60,6 @@ namespace Webview2Viewer
     public void AddToHost(Control host)
     {
       host.Controls.Add(_webView);
-    }
-
-    private void WebView_NavigationCompleted(object sender, CoreWebView2NavigationCompletedEventArgs e)
-    {
-    }
-
-    /*public async Task SetScreenshot(PictureBox pictureBox)
-    {
-        pictureBox.Image = null;
-        if (!webViewInitialized) return;
-        var ms = new MemoryStream();
-        await webView.CoreWebView2.CapturePreviewAsync(CoreWebView2CapturePreviewImageFormat.Png, ms);
-        var screenshot = new Bitmap(ms);
-        pictureBox.Image = screenshot;
-        pictureBox.Visible = true;
-    }*/
-
-    public Bitmap MakeScreenshot()
-    {
-      return null;
     }
 
     public void PrepareContentUpdate(bool preserveVerticalScrollPosition)
@@ -97,17 +87,31 @@ namespace Webview2Viewer
       return path;
     }
 
-    private string ConvertPathToLocalUri(string path)
+    private string UriToPath(string path)
     {
+      if (path == string.Empty) {
+        return path;
+      }
+      path = HttpUtility.UrlDecode(path);
+      return Regex.Replace(path, @"^\/disk(\w)\/", "$1:/");
+    }
+
+    private string PathToUri(string path)
+    {
+      if (path == string.Empty) {
+        return path;
+      }
       path = Path.GetFullPath(path).Replace("\\", "/");
       return UrlPathEncode(Regex.Replace(path, @"^(\w):\/", "disk$1/"));
     }
 
-    public void SetContent(string content, string documentPath, string assetsPath, string cssFile, bool syncView)
+    public async Task SetContent(string content, string documentPath, string assetsPath, string cssFile, bool syncView)
     {
-      if (!_webViewInitialized) {
+      if (_webView == null) {
         return;
       }
+
+      await _webView.EnsureCoreWebView2Async(_environment);
 
       var baseDir = Path.GetDirectoryName(documentPath);
       var replaceFileMapping = "file://" + baseDir;
@@ -120,7 +124,7 @@ namespace Webview2Viewer
       reload = reload || (_syncView != syncView);
 
       if (reload) {
-        _documentUri = "/" + ConvertPathToLocalUri(documentPath);
+        _documentUri = "/" + PathToUri(documentPath);
         _documentPath = documentPath;
         _cssFile = cssFile;
         _syncView = syncView;
@@ -138,7 +142,7 @@ namespace Webview2Viewer
         }));
 
         ExecuteWebviewAction(new Action(() => {
-          content = File.ReadAllText(assetsPath + "/markdown/loader.html");
+          content = File.ReadAllText(assetsPath + "/loader.html");
           // compability with totalcomander markdown viewer plugin
           cssFile = cssFile.Replace("\\", "/");
           assetsPath = assetsPath.Replace("\\", "/");
@@ -148,9 +152,9 @@ namespace Webview2Viewer
             content = content.Replace("http://assets.example/markdown/__CSS_NAME__", "http://assets.example/" + UrlPathEncode(cssFile));
           }
           else {
-            content = content.Replace("http://assets.example/markdown/__CSS_NAME__", "http://local.example/" + ConvertPathToLocalUri(cssFile));
+            content = content.Replace("http://assets.example/markdown/__CSS_NAME__", "http://local.example/" + PathToUri(cssFile));
           }
-          content = content.Replace("__BASE_URL__", ConvertPathToLocalUri(baseDir));
+          content = content.Replace("__BASE_URL__", PathToUri(baseDir));
           content = content.Replace("__CSS_NAME__", cssFile);
           content = content.Replace("__WITH_LINE_MARKER__", syncView ? "true" : "false");
           content = content.Replace("__MD_FILENAME__", _documentUri.Substring(1));
@@ -169,43 +173,168 @@ namespace Webview2Viewer
       if (e.Response != null) {
         return;
       }
-      var uri = new Uri(e.Request.Uri);
-      var charset = "";
-      if (uri.DnsSafeHost == "local.example") {
-        byte[] bytes = null;
-        if (_documentUri.Equals(uri.AbsolutePath, StringComparison.InvariantCultureIgnoreCase)) {
-          bytes = _content;
-          charset = "; charset=utf-8";
+      if (e.Request.Method == "GET") {
+        var uri = new Uri(e.Request.Uri);
+        if (uri.DnsSafeHost == "local.example") {
+          HttpGetContent(e, uri);
         }
-        else {
-          var path = HttpUtility.UrlDecode(uri.AbsolutePath);
-          path = Regex.Replace(path, @"^\/disk(\w)\/", "$1:/");
-          if (File.Exists(path)) {
-            bytes = File.ReadAllBytes(path);
-          }
+      }
+      else if (e.Request.Method == "PUT") {
+        var uri = new Uri(e.Request.Uri);
+        if (uri.DnsSafeHost == "local.example") {
+          HttpPutContent(e, uri);
         }
-
-        if (bytes != null) {
-          if (WebResource.MimeTypes.TryGetValue(Path.GetExtension(uri.AbsolutePath), out var contentType) == false) {
-            contentType = "application/octet-stream";
-          }
-          var stream = new MemoryStream(bytes);
-          e.Response = _webView.CoreWebView2.Environment.CreateWebResourceResponse(stream, 200, "OK",
-            $"Content-Type: {contentType}{charset}\r\n" +
-            $"Access-Control-Allow-Origin: *"
-          );
-          return;
-        }
-        else {
-          var stream = new MemoryStream();
-          e.Response = _webView.CoreWebView2.Environment.CreateWebResourceResponse(stream, 404, "NotFound", $"");
-          return;
+      }
+      else if (e.Request.Method == "OPTIONS") {
+        var uri = new Uri(e.Request.Uri);
+        if (uri.DnsSafeHost == "local.example") {
+          HttpOptionsContent(e, uri);
         }
       }
     }
 
-    public void SetZoomLevel(int zoomLevel)
+    private void HttpPutContent(CoreWebView2WebResourceRequestedEventArgs e, Uri requestUri)
     {
+      if (!_documentUri.Equals(requestUri.AbsolutePath, StringComparison.InvariantCultureIgnoreCase)) {
+        Error404(e);
+        return;
+      }
+
+      var headers = new List<string> {
+        "Access-Control-Allow-Origin: *"
+      };
+
+      string requestBody;
+      using (var reader = new StreamReader(e.Request.Content, Encoding.UTF8)) {
+        requestBody = reader.ReadToEnd();
+      }
+
+      e.Response = _webView.CoreWebView2
+        .Environment
+        .CreateWebResourceResponse(new MemoryStream(), 200, "OK", string.Join("\r\n", headers));
+
+      new Task(() => DocumentChanged?.Invoke(this, new DocumentContentChanged {
+        Content = requestBody
+      })).Start();
+    }
+
+    private void HttpGetContent(CoreWebView2WebResourceRequestedEventArgs e, Uri requestUri)
+    {
+      var charset = "";
+      byte[] bytes = null;
+      var headers = new List<string> {
+        "Access-Control-Allow-Origin: *"
+      };
+
+      if (Regex.IsMatch(requestUri.AbsolutePath, @"\*\.(\*|.+)$")) {
+        var path = UriToPath(requestUri.AbsolutePath);
+        var mask = Path.GetFileName(path);
+
+        var dir = Path.GetDirectoryName(path);
+        if (Directory.Exists(dir)) {
+          var files = Directory.GetFiles(dir, mask, SearchOption.TopDirectoryOnly)
+            .Select(li => new { name = Path.GetFileName(li), type = "file" })
+            .ToArray();
+
+          Json(e, headers, files);
+          return;
+        }
+        Error404(e);
+        return;
+      }
+
+      if (_documentUri.Equals(requestUri.AbsolutePath, StringComparison.InvariantCultureIgnoreCase)) {
+        bytes = _content;
+        charset = "; charset=utf-8";
+      }
+      else {
+        var path = UriToPath(requestUri.AbsolutePath);
+        if (File.Exists(path)) {
+          bytes = File.ReadAllBytes(path);
+        }
+      }
+
+      if (bytes == null) {
+        Error404(e);
+        return;
+      }
+
+      if (WebResource.MimeTypes.TryGetValue(Path.GetExtension(requestUri.AbsolutePath), out var contentType)) {
+        headers.Add($"Content-Type: {contentType}{charset}");
+      }
+      else {
+        headers.Add($"Content-Type: application/octet-stream");
+      }
+
+      e.Response = _webView.CoreWebView2
+        .Environment
+        .CreateWebResourceResponse(new MemoryStream(bytes), 200, "OK", string.Join("\r\n", headers));
+    }
+
+    private void Json<TModel>(CoreWebView2WebResourceRequestedEventArgs e, List<string> headers, TModel data)
+    {
+      headers.Add("Content-Type: application/json; charset=utf-8");
+      e.Response = _webView.CoreWebView2
+        .Environment
+        .CreateWebResourceResponse(ToJson(data), 200, "OK", string.Join("\r\n", headers));
+    }
+
+    private static MemoryStream ToJson<TData>(TData files, MemoryStream stream = null)
+    {
+      if (stream == null) {
+        stream = new MemoryStream();
+      }
+      var serializer = new JsonSerializer();
+      using (var writter = new StreamWriter(stream, Encoding.UTF8, 2048, true)) {
+        serializer.Serialize(writter, files);
+        writter.Flush();
+      }
+      return stream;
+    }
+
+    private void Error404(CoreWebView2WebResourceRequestedEventArgs e)
+    {
+      e.Response = _webView.CoreWebView2.Environment.CreateWebResourceResponse(new MemoryStream(), 404, "NotFound", $"");
+    }
+
+    private void HttpOptionsContent(CoreWebView2WebResourceRequestedEventArgs e, Uri uri)
+    {
+      var charset = "";
+      var headers = new List<string> {
+        "Access-Control-Allow-Origin: *",
+        "Access-Control-Allow-Headers: *"
+      };
+
+      if (_documentUri.Equals(uri.AbsolutePath, StringComparison.InvariantCultureIgnoreCase)) {
+        charset = "; charset=utf-8";
+        headers.Add("Access-Control-Allow-Methods: GET, PUT, OPTIONS");
+      }
+      else {
+        var path = HttpUtility.UrlDecode(uri.AbsolutePath);
+        path = Regex.Replace(path, @"^\/disk(\w)\/", "$1:/");
+        if (!File.Exists(path)) {
+          Error404(e);
+          return;
+        }
+        headers.Add("Access-Control-Allow-Methods: GET, OPTIONS");
+      }
+
+      if (WebResource.MimeTypes.TryGetValue(Path.GetExtension(uri.AbsolutePath), out var contentType) == false) {
+        contentType = "application/octet-stream";
+      }
+      headers.Add($"Content-Type: {contentType}{charset}");
+
+      e.Response = _webView.CoreWebView2.Environment
+        .CreateWebResourceResponse(new MemoryStream(), 204, "OK", string.Join("\r\n", headers));
+    }
+
+    public async Task SetZoomLevel(int zoomLevel)
+    {
+      if (_webView == null) {
+        return;
+      }
+      await _webView.EnsureCoreWebView2Async(_environment);
+
       double zoomFactor = ConvertToZoomFactor(zoomLevel);
       ExecuteWebviewAction(new Action(() => {
         if (_webView.ZoomFactor != zoomFactor) {
@@ -237,47 +366,48 @@ namespace Webview2Viewer
       }
     }
 
-    public string GetRenderingEngineName()
-    {
-      return "EDGE";
-    }
-
     private void ExecuteWebviewAction(Action action)
     {
       try {
-        _webView.Invoke(action);
+        if (_webViewInitialized) {
+          _webView.Invoke(action);
+        }
       }
-      catch (Exception ex) { }
+      catch (Exception) { }
     }
 
     const string CONFIG_FOLDER_NAME = "MarkdownPanel";
     const string _scrollScript = @"
-var spacer = document.getElementById('spacer');
-if (spacer) {
-  spacer.parentElement.removeChild(spacer);
-}
+(function() {
+  var element = document.getElementById('__LINE__');
+  if (!element) {
+    return;
+  }
+  var spacer = document.getElementById('spacer');
+  if (spacer) {
+    spacer.parentElement.removeChild(spacer);
+  }
+  var rect = element.getBoundingClientRect();
+  var elementTop = rect.top + window.pageYOffset;
 
-var element = document.getElementById('__LINE__');
-var rect = element.getBoundingClientRect();
-var elementTop = rect.top + window.pageYOffset;
+  var requiredScrollTop = elementTop;
+  var maxScrollTop = document.documentElement.scrollHeight - window.innerHeight;
+  if (requiredScrollTop > maxScrollTop) {
+    var extraHeight = requiredScrollTop - maxScrollTop;
+    var spacer = document.createElement('div');
+    spacer.id = 'spacer';
+    spacer.style.height = extraHeight + 'px';
+    spacer.style.width = '1px';
+    spacer.style.pointerEvents = 'none';
 
-var requiredScrollTop = elementTop;
-var maxScrollTop = document.documentElement.scrollHeight - window.innerHeight;
-if (requiredScrollTop > maxScrollTop) {
-  var extraHeight = requiredScrollTop - maxScrollTop;
-  var spacer = document.createElement('div');
-  spacer.id = 'spacer';
-  spacer.style.height = extraHeight + 'px';
-  spacer.style.width = '1px';
-  spacer.style.pointerEvents = 'none';
+    document.body.appendChild(spacer);
+  }
 
-  document.body.appendChild(spacer);
-}
-
-window.scrollTo({
-  top: requiredScrollTop,
-  behavior: 'smooth'
-});
+  window.scrollTo({
+    top: requiredScrollTop,
+    behavior: 'smooth'
+  });
+})();
 ";
 
     private Microsoft.Web.WebView2.WinForms.WebView2 _webView;
@@ -288,8 +418,8 @@ window.scrollTo({
     private string _assetPath;
     private string _documentPath;
     private string _documentUri;
-    private bool _syncView;
 
+    private bool _syncView;
     private CoreWebView2Environment _environment = null;
   }
 }

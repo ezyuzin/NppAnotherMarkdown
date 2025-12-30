@@ -1,15 +1,17 @@
-﻿using System;
-using AnotherMarkdown.Entities;
+﻿using AnotherMarkdown.Entities;
+using PanelCommon;
+using System;
 
 namespace AnotherMarkdown.Forms
 {
   public interface IViewerInterface
   {
     IntPtr Handle { get; }
-    void SetMarkdownFilePath(string filepath);
     void UpdateSettings(Settings settings);
     void RenderMarkdown(string currentText, string filepath);
     void ScrollToElementWithLineNo(int lineNo);
     bool IsValidFileExtension(string filename);
+
+    EventHandler<DocumentContentChanged> OnDocumentContentChanged { get; set; }
   }
 }

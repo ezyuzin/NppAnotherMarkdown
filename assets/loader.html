@@ -1,0 +1,22 @@
+﻿<html>
+  <head>
+	  <meta charset="utf-8"/>
+	  <base href=http://local.example/__BASE_URL__/ >
+    <script src="http://assets.example/loader.js"></script>
+  </head>
+
+  <body>
+    <div id="content"></div>
+    <script>
+      (function() {
+        const view = window.viewLoader(
+          "http://local.example/__MD_FILENAME__", 
+          "http://assets.example/markdown/__CSS_NAME__",
+          "__WITH_LINE_MARKER__"        
+        );
+        window.contentChanged = view.documentChanged;
+      })();
+
+    </script>
+  </body>
+</html>

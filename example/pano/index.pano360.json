@@ -1,0 +1,327 @@
+{
+  "default": {
+    "firstScene": "morkvashi",
+    "sceneFadeDuration": 1000,
+    "autoLoad": true,
+    "basePath": "./",
+    "showZoomCtrl": false,
+    "compass": false,
+    "autoRotate": 0,
+    "minHfov": 5,
+    "maxHfov": 120
+  },
+  "scenes": {
+    "morkvashi": {
+      "title": "Zhigulevsk, 2018",
+      "type": "equirectangular",
+      "panorama": "pano1.jpg",
+      "pitch": -11.21219250488799,
+      "yaw": 76.5456351704845,
+      "hfov": 95.46567458087783,
+      "hotSpots": [
+        {
+          "pitch": -21.657703012647367,
+          "yaw": 108.03797315431528,
+          "type": "info",
+          "text": "Morkvashi, Grocery"
+        },
+        {
+          "pitch": -59.41454176410147,
+          "yaw": 111.65641110826995,
+          "type": "info",
+          "text": "LLC META",
+          "sceneId": "Meta2"
+        },
+        {
+          "pitch": -37.378710181854885,
+          "yaw": 256.60225829882955,
+          "type": "info",
+          "text": "LLC META, New Office",
+          "sceneId": "Meta"
+        },
+        {
+          "pitch": -12.116250580901232,
+          "yaw": -60.559945321213036,
+          "type": "info",
+          "text": "Zhigulevsk, Center",
+          "sceneId": "zhig-center"
+        },
+        {
+          "pitch": -11.905924801990805,
+          "yaw": -154.04831882990777,
+          "type": "info",
+          "text": "Radioplant",
+          "sceneId": "radiozavod"
+        },
+        {
+          "pitch": -2.6833171892916567,
+          "yaw": -10.045657886725166,
+          "type": "info",
+          "text": "RadioTower",
+          "sceneId": "antenna"
+        },
+        {
+          "pitch": -3.109056300393773,
+          "yaw": 53.84018168697105,
+          "type": "info",
+          "text": "Tolyatti"
+        },
+        {
+          "pitch": -24.82953558660334,
+          "yaw": 158.6258761142317,
+          "type": "info",
+          "text": "Наш гараж"
+        },
+        {
+          "pitch": -25.317269997948063,
+          "yaw": 165.33177696874145,
+          "type": "info",
+          "text": "Репина 13"
+        },
+        {
+          "pitch": -31.997159610898176,
+          "yaw": 160.67048969391885,
+          "type": "info",
+          "text": "Школа N13"
+        }
+      ],
+      "hfow": 78.96104207076549
+    },
+    "Meta2": {
+      "title": "Zhigulevsk, 2018",
+      "type": "equirectangular",
+      "panorama": "pano-meta2.jpg",
+      "pitch": -0.6253790745766961,
+      "yaw": 51.94224312702079,
+      "hfov": 120,
+      "hotSpots": [
+        {
+          "pitch": 0.8636085359525962,
+          "yaw": 102.64676686926248,
+          "type": "info",
+          "text": "LLC META"
+        },
+        {
+          "pitch": 11.441273932028492,
+          "yaw": 55.55268657489512,
+          "type": "info",
+          "text": "Morkvashi",
+          "sceneId": "morkvashi"
+        }
+      ],
+      "hfow": 111.55610955132954
+    },
+    "Meta": {
+      "title": "LLC META",
+      "type": "equirectangular",
+      "panorama": "pano-meta.jpg",
+      "pitch": 2.874264970190052,
+      "yaw": -118.5210826626743,
+      "hfov": 78.96104207076549,
+      "hotSpots": [
+        {
+          "pitch": 7.668539227520941,
+          "yaw": -116.70449077834382,
+          "type": "info",
+          "text": "LLC META"
+        },
+        {
+          "pitch": 10.251164944839882,
+          "yaw": 161.82683240667552,
+          "type": "info",
+          "text": "Morkvashi",
+          "sceneId": "morkvashi"
+        },
+        {
+          "pitch": 10.88801358319589,
+          "yaw": 26.044187583045527,
+          "type": "info",
+          "text": "Zhigulevsk, Center",
+          "sceneId": "zhig-center"
+        }
+      ]
+    },
+    "zhig-center": {
+      "title": "Zhigulevsk, Center",
+      "type": "equirectangular",
+      "panorama": "pano2.jpg",
+      "pitch": -21.517738719230124,
+      "yaw": -57.02395796499002,
+      "hfov": 120,
+      "hotSpots": [
+        {
+          "pitch": -7.716023794112527,
+          "yaw": 41.78166963924204,
+          "type": "info",
+          "text": "Morkvashi",
+          "sceneId": "morkvashi"
+        },
+        {
+          "pitch": -40.17605131799094,
+          "yaw": -95.91623803170653,
+          "type": "info",
+          "text": "Central Square",
+          "sceneId": "zhig-center2"
+        },
+        {
+          "pitch": -13.369959492348531,
+          "yaw": -239.79526682510394,
+          "type": "info",
+          "text": "Церковь"
+        },
+        {
+          "pitch": -4.679139421246724,
+          "yaw": 78.12522948279377,
+          "type": "info",
+          "text": "RadioPlant",
+          "sceneId": "radiozavod"
+        },
+        {
+          "pitch": -18.560714210891796,
+          "yaw": -66.0872732732422,
+          "type": "info",
+          "text": "Могутка"
+        },
+        {
+          "pitch": -2.6511991041991827,
+          "yaw": -67.12307443945326,
+          "type": "info",
+          "text": "RadioTower",
+          "sceneId": "antenna"
+        },
+        {
+          "pitch": -8.024583210672567,
+          "yaw": -45.75351444302635,
+          "type": "info",
+          "text": "Электростанция"
+        }
+      ],
+      "hfow": 120
+    },
+    "zhig-center2": {
+      "title": "Zhigulevsk, Central Square",
+      "type": "equirectangular",
+      "panorama": "pano3.jpg",
+      "pitch": -43.05810057485412,
+      "yaw": 153.52858805913388,
+      "hfov": 78.96104207076549,
+      "hotSpots": [
+        {
+          "pitch": -37.591738273980916,
+          "yaw": 29.88384015225656,
+          "type": "info",
+          "text": "Stadion",
+          "sceneId": "zhig-center"
+        },
+        {
+          "pitch": -6.621757087761653,
+          "yaw": -36.419120043536196,
+          "type": "info",
+          "text": "Morkvashi",
+          "sceneId": "morkvashi"
+        },
+        {
+          "pitch": -25.970001802551955,
+          "yaw": -145.80183452982965,
+          "type": "info",
+          "text": "BUSSTOP, Zhigulevsk-Togliatti"
+        },
+        {
+          "pitch": -4.507098040769448,
+          "yaw": -0.42591392796953187,
+          "type": "info",
+          "text": "RadioPlant",
+          "sceneId": "radiozavod"
+        },
+        {
+          "pitch": 1.7163781359298689,
+          "yaw": -149.87306966660265,
+          "type": "info",
+          "text": "RadioTower",
+          "sceneId": "antenna"
+        }
+      ],
+      "hfow": 96.78272742421021
+    },
+    "antenna": {
+      "title": "RadioTower",
+      "type": "equirectangular",
+      "panorama": "pano-antenna.jpg",
+      "pitch": -5.001588239413247,
+      "yaw": 134.46654740544602,
+      "hfov": 120,
+      "hotSpots": [
+        {
+          "pitch": -6.062361200562692,
+          "yaw": 177.11036183898716,
+          "type": "info",
+          "text": "Zhigulevsk Center",
+          "sceneId": "zhig-center2"
+        },
+        {
+          "pitch": -1.6105638801474975,
+          "yaw": 149.7517389582415,
+          "type": "info",
+          "text": "Morkvashi",
+          "sceneId": "morkvashi"
+        },
+        {
+          "pitch": -2.088308821270208,
+          "yaw": 168.1401314117678,
+          "type": "info",
+          "text": "Radioplant",
+          "sceneId": "radiozavod"
+        },
+        {
+          "pitch": -3.0229583477110076,
+          "yaw": 92.55097754278017,
+          "type": "info",
+          "text": "Road to Tolyatti"
+        },
+        {
+          "pitch": -8.102430114486827,
+          "yaw": 108.808058872238,
+          "type": "info",
+          "text": "ГЭС"
+        }
+      ],
+      "hfow": 101.211510866642
+    },
+    "radiozavod": {
+      "title": "Zhigulevsk, Radioplant",
+      "type": "equirectangular",
+      "panorama": "pano-radiozavod.jpg",
+      "pitch": 1.9002952709905951,
+      "yaw": -280.4325819668293,
+      "hfov": 120,
+      "hotSpots": [
+        {
+          "pitch": 1.9182295642858112,
+          "yaw": 79.46827784570024,
+          "type": "info",
+          "text": "Radioplant"
+        },
+        {
+          "pitch": 0.42567408437378884,
+          "yaw": 164.3911926631008,
+          "type": "info",
+          "text": "Old office LLC META"
+        },
+        {
+          "pitch": 13.902879352449906,
+          "yaw": -47.08690951563847,
+          "type": "info",
+          "text": "Morkvashi",
+          "sceneId": "morkvashi"
+        },
+        {
+          "pitch": 21.526379772949113,
+          "yaw": -103.78773469526368,
+          "type": "info",
+          "text": "Zhigulevsk, Center",
+          "sceneId": "zhig-center"
+        }
+      ]
+    }
+  }
+}
