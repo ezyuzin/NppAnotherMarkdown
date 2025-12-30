@@ -35,7 +35,8 @@ namespace AnotherMarkdown.Forms
       webview.StatusTextChangedAction = (status) => {
         toolStripStatusLabel1.Text = status;
       };
-      webview
+
+      _webviewInitTask = webview
         .InitializeAsync(settings.ZoomLevel)
         .ContinueWith(t => {
           panel1.Controls.Clear();
@@ -70,7 +71,7 @@ namespace AnotherMarkdown.Forms
 
     public void RenderMarkdown(string currentText, string filepath)
     {
-      if (_webView != null && (_renderTask == null || _renderTask.IsCompleted)) {
+      if ((_renderTask == null || _renderTask.IsCompleted)) {
         var cssFile = _settings.IsDarkModeEnabled ? _settings.CssDarkModeFileName : _settings.CssFileName;
         if (!File.Exists(cssFile)) {
           cssFile = _settings.IsDarkModeEnabled ? Settings.DefaultDarkModeCssFile : Settings.DefaultCssFile;
@@ -85,6 +86,7 @@ namespace AnotherMarkdown.Forms
 
             var withSyncView = (_settings.SyncViewWithCaretPosition || _settings.SyncViewWithFirstVisibleLine);
 
+            await _webviewInitTask;
             await _webView.SetContent(currentText, filepath, assetsPath, cssFile, withSyncView);
             await _webView.SetZoomLevel(_settings.ZoomLevel);
           }
@@ -127,6 +129,7 @@ namespace AnotherMarkdown.Forms
       return matchExtensionList;
     }
 
+    private Task _webviewInitTask;
     private Task _renderTask;
     private Settings _settings;
     private Webview2WebbrowserControl _webView;
