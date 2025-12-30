@@ -26,6 +26,5 @@ namespace PanelCommon
     Task SetZoomLevel(int zoomLevel);
     void ScrollToElementWithLineNo(int lineNo);
     string GetRenderingEngineName();
-    Bitmap MakeScreenshot();
   }
 }

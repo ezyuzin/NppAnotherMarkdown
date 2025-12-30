@@ -52,7 +52,6 @@ namespace Webview2Viewer
       _webView.Dock = DockStyle.Fill;
       _webView.TabIndex = 0;
       _webView.NavigationStarting += OnWebBrowser_NavigationStarting;
-      _webView.NavigationCompleted += WebView_NavigationCompleted;
       _webView.ZoomFactor = ConvertToZoomFactor(zoomLevel);
 
       _webViewInitialized = true;
@@ -63,7 +62,6 @@ namespace Webview2Viewer
       host.Controls.Add(_webView);
     }
 
-    private void WebView_NavigationCompleted(object sender, CoreWebView2NavigationCompletedEventArgs e) { }
     /*public async Task SetScreenshot(PictureBox pictureBox)
     {
         pictureBox.Image = null;
@@ -74,11 +72,6 @@ namespace Webview2Viewer
         pictureBox.Image = screenshot;
         pictureBox.Visible = true;
     }*/
-
-    public Bitmap MakeScreenshot()
-    {
-      return null;
-    }
 
     public void PrepareContentUpdate(bool preserveVerticalScrollPosition)
     {
@@ -128,6 +121,7 @@ namespace Webview2Viewer
       if (_webView == null) {
         return;
       }
+
       await _webView.EnsureCoreWebView2Async(_environment);
 
       var baseDir = Path.GetDirectoryName(documentPath);

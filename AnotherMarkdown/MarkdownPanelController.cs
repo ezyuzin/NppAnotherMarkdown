@@ -105,17 +105,16 @@ namespace AnotherMarkdown
       if (notification.Header.Code == (uint)NppMsg.NPPN_BUFFERACTIVATED) {
         // Focus was switched to a new document
         var currentFilePath = notepadPPGateway.GetCurrentFilePath();
-        PreviewForm.SetMarkdownFilePath(currentFilePath);
+        AutoShowOrHidePanel(currentFilePath);
         if (IsPanelVisible) {
           RenderMarkdownDirect();
         }
-        AutoShowOrHidePanel(currentFilePath);
       }
       // NPPN_DARKMODECHANGED (NPPN_FIRST + 27) // To notify plugins that Dark Mode was enabled/disabled
       if (notification.Header.Code == (uint)(NppMsg.NPPN_FIRST + 27)) {
         settings.IsDarkModeEnabled = IsDarkModeEnabled();
-        PreviewForm.UpdateSettings(settings);
         if (IsPanelVisible) {
+          PreviewForm.UpdateSettings(settings);
           RenderMarkdownDirect();
         }
       }
@@ -153,7 +152,9 @@ namespace AnotherMarkdown
 
     private void RenderMarkdownDirect()
     {
-      PreviewForm.RenderMarkdown(GetCurrentEditorText(), notepadPPGateway.GetCurrentFilePath());
+      if (IsPanelVisible) {
+        PreviewForm.RenderMarkdown(GetCurrentEditorText(), notepadPPGateway.GetCurrentFilePath());
+      }
     }
 
     private string GetCurrentEditorText()
@@ -196,10 +197,10 @@ namespace AnotherMarkdown
         settings.RenderingEngine = settingsForm.RenderingEngine;
 
         settings.IsDarkModeEnabled = IsDarkModeEnabled();
-        PreviewForm.UpdateSettings(settings);
         SaveSettings();
         //Update Preview
         if (IsPanelVisible) {
+          PreviewForm.UpdateSettings(settings);
           RenderMarkdownDirect();
         }
       }
@@ -337,8 +338,6 @@ namespace AnotherMarkdown
       }
 
       if (IsPanelVisible) {
-        var currentFilePath = notepadPPGateway.GetCurrentFilePath();
-        PreviewForm.SetMarkdownFilePath(currentFilePath);
         PreviewForm.UpdateSettings(settings);
         RenderMarkdownDirect();
       }

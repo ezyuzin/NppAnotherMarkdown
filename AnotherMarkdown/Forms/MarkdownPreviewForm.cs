@@ -85,8 +85,6 @@ namespace AnotherMarkdown.Forms
     public void RenderMarkdown(string currentText, string filepath)
     {
       if (_renderTask == null || _renderTask.IsCompleted) {
-        MakeAndDisplayScreenShot();
-
         var cssFile = _settings.IsDarkModeEnabled ? _settings.CssDarkModeFileName : _settings.CssFileName;
         if (!File.Exists(cssFile)) {
           cssFile = _settings.IsDarkModeEnabled ? Settings.DefaultDarkModeCssFile : Settings.DefaultCssFile;
@@ -101,25 +99,12 @@ namespace AnotherMarkdown.Forms
 
             var withSyncView = (_settings.SyncViewWithCaretPosition || _settings.SyncViewWithFirstVisibleLine);
 
-            await _webView.SetContent(currentText, currentFilePath, assetsPath, cssFile, withSyncView);
+            await _webView.SetContent(currentText, filepath, assetsPath, cssFile, withSyncView);
             await _webView.SetZoomLevel(_settings.ZoomLevel);
           }
           catch (Exception) { }
         });
         _renderTask.Start(context);
-      }
-    }
-
-    /// <summary>
-    /// Makes and displays a screenshot of the current browser content to prevent it from flickering  while loading
-    /// updated content
-    /// </summary>
-    private void MakeAndDisplayScreenShot()
-    {
-      Bitmap bm = _webView.MakeScreenshot();
-      if (bm != null) {
-        pictureBoxScreenshot.Image = bm;
-        pictureBoxScreenshot.Visible = true;
       }
     }
 
@@ -139,29 +124,11 @@ namespace AnotherMarkdown.Forms
     protected override void WndProc(ref Message m)
     {
       _wndProcCallback(ref m);
-
-      //Continue the processing, as we only toggle
       base.WndProc(ref m);
     }
 
     private void btnSaveHtml_Click(object sender, EventArgs e)
     {
-      using (SaveFileDialog saveFileDialog = new SaveFileDialog()) {
-        saveFileDialog.Filter = "html files (*.html, *.htm)|*.html;*.htm|All files (*.*)|*.*";
-        saveFileDialog.RestoreDirectory = true;
-        saveFileDialog.InitialDirectory = Path.GetDirectoryName(currentFilePath);
-        saveFileDialog.FileName = Path.GetFileNameWithoutExtension(currentFilePath);
-        if (saveFileDialog.ShowDialog() == DialogResult.OK) {
-          writeHtmlContentToFile(saveFileDialog.FileName);
-        }
-      }
-    }
-
-    private void writeHtmlContentToFile(string filename)
-    {
-      if (!string.IsNullOrEmpty(filename)) {
-        File.WriteAllText(filename, htmlContentForExport);
-      }
     }
 
     public bool IsValidFileExtension(string filename)
@@ -180,15 +147,8 @@ namespace AnotherMarkdown.Forms
       return matchExtensionList;
     }
 
-    public void SetMarkdownFilePath(string filepath)
-    {
-      currentFilePath = filepath;
-    }
-
     private Task _renderTask;
-    private string htmlContentForExport;
     private Settings _settings;
-    private string currentFilePath;
     private Webview2WebbrowserControl _webView;
     private ActionRef<Message> _wndProcCallback;
     private string _defaultAssetsPath;
