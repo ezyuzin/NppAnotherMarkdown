@@ -15,7 +15,7 @@ using PanelCommon;
 
 namespace Webview2Viewer
 {
-  public class Webview2WebbrowserControl : IWebbrowserControl
+  public class Webview2WebbrowserControl : IWebbrowserControl, IDisposable
   {
     public EventHandler<DocumentContentChanged> DocumentChanged { get; set; }
     public Action<string> StatusTextChangedAction { get; set; }
@@ -23,6 +23,12 @@ namespace Webview2Viewer
 
     public Webview2WebbrowserControl()
     {
+      _webView = null;
+    }
+
+    public void Dispose()
+    {
+      _webView?.Dispose();
       _webView = null;
     }
 

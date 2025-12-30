@@ -15,22 +15,22 @@ using PanelCommon;
 
 namespace AnotherMarkdown
 {
-  public class MarkdownPanelController
+  public class MarkdownPanelController : IDisposable
   {
-    private MarkdownPreviewForm viewerInterface
+    private MarkdownPreviewForm PreviewForm
     {
       get {
-        if (_viewerInterface == null) {
+        if (_previewForm == null) {
           lock (_lock) {
-            if (_viewerInterface == null) {
-              _viewerInterface = MarkdownPreviewForm.InitViewer(settings, HandleWndProc);
-              _viewerInterface.OnDocumentContentChanged += (s, e) => {
+            if (_previewForm == null) {
+              _previewForm = MarkdownPreviewForm.InitViewer(settings, HandleWndProc);
+              _previewForm.OnDocumentContentChanged += (s, e) => {
                 DocumentChanged(e);
               };
             }
           }
         }
-        return _viewerInterface;
+        return _previewForm;
       }
     }
 
@@ -86,7 +86,7 @@ namespace AnotherMarkdown
 
     public void OnNotification(ScNotification notification)
     {
-      if (isPanelVisible && notification.Header.Code == (uint)SciMsg.SCN_UPDATEUI) {
+      if (IsPanelVisible && notification.Header.Code == (uint)SciMsg.SCN_UPDATEUI) {
         var scintillaGateway = scintillaGatewayFactory();
         if (settings.SyncViewWithCaretPosition) {
           if (lastCaretPosition != scintillaGateway.GetCurrentPos()) {
@@ -105,8 +105,8 @@ namespace AnotherMarkdown
       if (notification.Header.Code == (uint)NppMsg.NPPN_BUFFERACTIVATED) {
         // Focus was switched to a new document
         var currentFilePath = notepadPPGateway.GetCurrentFilePath();
-        viewerInterface.SetMarkdownFilePath(currentFilePath);
-        if (isPanelVisible) {
+        PreviewForm.SetMarkdownFilePath(currentFilePath);
+        if (IsPanelVisible) {
           RenderMarkdownDirect();
         }
         AutoShowOrHidePanel(currentFilePath);
@@ -114,12 +114,12 @@ namespace AnotherMarkdown
       // NPPN_DARKMODECHANGED (NPPN_FIRST + 27) // To notify plugins that Dark Mode was enabled/disabled
       if (notification.Header.Code == (uint)(NppMsg.NPPN_FIRST + 27)) {
         settings.IsDarkModeEnabled = IsDarkModeEnabled();
-        viewerInterface.UpdateSettings(settings);
-        if (isPanelVisible) {
+        PreviewForm.UpdateSettings(settings);
+        if (IsPanelVisible) {
           RenderMarkdownDirect();
         }
       }
-      if (isPanelVisible && notification.Header.Code == (uint)SciMsg.SCN_MODIFIED) {
+      if (IsPanelVisible && notification.Header.Code == (uint)SciMsg.SCN_MODIFIED) {
         lastTickCount = Environment.TickCount;
         RenderMarkdownDeferred();
       }
@@ -153,7 +153,7 @@ namespace AnotherMarkdown
 
     private void RenderMarkdownDirect()
     {
-      viewerInterface.RenderMarkdown(GetCurrentEditorText(), notepadPPGateway.GetCurrentFilePath());
+      PreviewForm.RenderMarkdown(GetCurrentEditorText(), notepadPPGateway.GetCurrentFilePath());
     }
 
     private string GetCurrentEditorText()
@@ -164,7 +164,7 @@ namespace AnotherMarkdown
 
     private void ScrollToElementAtLineNo(int lineNo)
     {
-      viewerInterface.ScrollToElementWithLineNo(lineNo);
+      PreviewForm.ScrollToElementWithLineNo(lineNo);
     }
 
     public void InitCommandMenu()
@@ -196,10 +196,10 @@ namespace AnotherMarkdown
         settings.RenderingEngine = settingsForm.RenderingEngine;
 
         settings.IsDarkModeEnabled = IsDarkModeEnabled();
-        viewerInterface.UpdateSettings(settings);
+        PreviewForm.UpdateSettings(settings);
         SaveSettings();
         //Update Preview
-        if (isPanelVisible) {
+        if (IsPanelVisible) {
           RenderMarkdownDirect();
         }
       }
@@ -220,7 +220,7 @@ namespace AnotherMarkdown
       var currentPluginPath = PluginUtils.GetPluginDirectory();
       var helpFile = Path.Combine(currentPluginPath, "README.md");
       Win32.SendMessage(PluginBase.nppData._nppHandle, (uint)NppMsg.NPPM_DOOPEN, 0, helpFile);
-      if (!isPanelVisible) {
+      if (!IsPanelVisible) {
         TogglePanelVisible();
       }
 
@@ -314,39 +314,44 @@ namespace AnotherMarkdown
 
     private void TogglePanelVisible()
     {
-      if (_ptrNppTbData.HasValue) {
-        Win32.SendMessage(PluginBase.nppData._nppHandle, (uint) NppMsg.NPPM_DMMHIDE, 0, viewerInterface.Handle);
+      if (!_ptrNppTbData.HasValue) {
+        var tbData = new NppTbData();
+        tbData.hClient = PreviewForm.Handle;
+        tbData.pszName = Main.PluginTitle;
+        tbData.dlgID = idMyDlg;
+        tbData.uMask = NppTbMsg.DWS_DF_CONT_RIGHT | NppTbMsg.DWS_ICONTAB | NppTbMsg.DWS_ICONBAR;
+        tbData.hIconTab = (uint) ConvertBitmapToIcon(Resources.markdown_16x16_solid_bmp).Handle;
+        tbData.pszModuleName = $"{Main.ModuleName}.dll";
 
-        Marshal.FreeHGlobal(_ptrNppTbData.Value);
-        _viewerInterface.Dispose();
-        _ptrNppTbData = null;
-        _viewerInterface = null;
-      }
-      else { 
-        NppTbData _nppTbData = new NppTbData();
-        _nppTbData.hClient = viewerInterface.Handle;
-        _nppTbData.pszName = Main.PluginTitle;
-        _nppTbData.dlgID = idMyDlg;
-        _nppTbData.uMask = NppTbMsg.DWS_DF_CONT_RIGHT | NppTbMsg.DWS_ICONTAB | NppTbMsg.DWS_ICONBAR;
-        _nppTbData.hIconTab = (uint) ConvertBitmapToIcon(Resources.markdown_16x16_solid_bmp).Handle;
-        _nppTbData.pszModuleName = $"{Main.ModuleName}.dll";
-        _ptrNppTbData = Marshal.AllocHGlobal(Marshal.SizeOf(_nppTbData));
-        Marshal.StructureToPtr(_nppTbData, _ptrNppTbData.Value, false);
+        _ptrNppTbData = Marshal.AllocHGlobal(Marshal.SizeOf(tbData));
+        Marshal.StructureToPtr(tbData, _ptrNppTbData.Value, false);
 
         Win32.SendMessage(PluginBase.nppData._nppHandle, (uint) NppMsg.NPPM_DMMREGASDCKDLG, 0, _ptrNppTbData.Value);
-        Win32.SendMessage(PluginBase.nppData._nppHandle, (uint) NppMsg.NPPM_DMMSHOW, 0, viewerInterface.Handle);
+        Win32.SendMessage(PluginBase.nppData._nppHandle, (uint) NppMsg.NPPM_DMMSHOW, 0, PreviewForm.Handle);
+        IsPanelVisible = true;
+      }
+      else {
+        IsPanelVisible = !IsPanelVisible;
+        var flag = IsPanelVisible ? NppMsg.NPPM_DMMSHOW : NppMsg.NPPM_DMMHIDE;
+        Win32.SendMessage(PluginBase.nppData._nppHandle, (uint) flag, 0, PreviewForm.Handle);
+      }
 
+      if (IsPanelVisible) {
         var currentFilePath = notepadPPGateway.GetCurrentFilePath();
-        viewerInterface.SetMarkdownFilePath(currentFilePath);
-        viewerInterface.UpdateSettings(settings);
+        PreviewForm.SetMarkdownFilePath(currentFilePath);
+        PreviewForm.UpdateSettings(settings);
         RenderMarkdownDirect();
       }
     }
 
     private Icon ConvertBitmapToIcon(Bitmap bitmapImage)
     {
-      using (Bitmap newBmp = new Bitmap(16, 16)) {
-        Graphics g = Graphics.FromImage(newBmp);
+      if (_icon != null) {
+        return _icon; 
+      }
+
+      _iconBmp = new Bitmap(16, 16);
+      using (Graphics g = Graphics.FromImage(_iconBmp)) {
         ColorMap[] colorMap = new ColorMap[1];
         colorMap[0] = new ColorMap();
         colorMap[0].OldColor = Color.Fuchsia;
@@ -354,8 +359,9 @@ namespace AnotherMarkdown
         ImageAttributes attr = new ImageAttributes();
         attr.SetRemapTable(colorMap);
         g.DrawImage(bitmapImage, new Rectangle(0, 0, 16, 16), 0, 0, 16, 16, GraphicsUnit.Pixel, attr);
-        return Icon.FromHandle(newBmp.GetHicon());
+        _icon = Icon.FromHandle(_iconBmp.GetHicon());
       }
+      return _icon;
     }
 
     /// <summary>
@@ -377,8 +383,8 @@ namespace AnotherMarkdown
     {
       if (nppReady && settings.AutoShowPanel) {
         // automatically show panel for supported file types
-        if ((!isPanelVisible && viewerInterface.IsValidFileExtension(currentFilePath))
-          || (isPanelVisible && !viewerInterface.IsValidFileExtension(currentFilePath))) {
+        if ((!IsPanelVisible && PreviewForm.IsValidFileExtension(currentFilePath))
+          || (IsPanelVisible && !PreviewForm.IsValidFileExtension(currentFilePath))) {
           TogglePanelVisible();
         }
       }
@@ -386,22 +392,21 @@ namespace AnotherMarkdown
 
     protected void HandleWndProc(ref Message m)
     {
-      //Listen for the closing of the dockable panel to toggle the toolbar icon
       switch (m.Msg) {
         case (int)WindowsMessage.WM_NOTIFY:
           var notify = (NMHDR)Marshal.PtrToStructure(m.LParam, typeof(NMHDR));
 
           // do not intercept Npp notifications like DMN_CLOSE, etc.
           if (notify.hwndFrom != PluginBase.nppData._nppHandle) {
-            viewerInterface.Invalidate(true);
+            PreviewForm.Invalidate(true);
             if (IntPtr.Size == 8) {
-              SetControlParent(viewerInterface, Win32.GetWindowLongPtr, Win32.SetWindowLongPtr);
+              SetControlParent(PreviewForm, Win32.GetWindowLongPtr, Win32.SetWindowLongPtr);
             }
             else {
-              SetControlParent(viewerInterface, Win32.GetWindowLong, Win32.SetWindowLong);
+              SetControlParent(PreviewForm, Win32.GetWindowLong, Win32.SetWindowLong);
             }
 
-            viewerInterface.Update();
+            PreviewForm.Update();
             return;
           }
 
@@ -436,6 +441,36 @@ namespace AnotherMarkdown
       }
     }
 
+
+    protected virtual void Dispose(bool disposing)
+    {
+      if (!_disposedValue) {
+        if (disposing) {
+          _icon?.Dispose();
+          _iconBmp?.Dispose();
+          _icon = null;
+          _iconBmp = null;
+
+          if (_ptrNppTbData.HasValue) {
+            Marshal.DestroyStructure(_ptrNppTbData.Value, typeof(NppTbData));
+            Marshal.FreeHGlobal(_ptrNppTbData.Value);
+            _ptrNppTbData = null;
+          }
+          _previewForm?.Dispose();
+          _previewForm = null;
+        }
+        _disposedValue = true;
+      }
+    }
+
+    public void Dispose()
+    {
+      // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+      Dispose(disposing: true);
+      GC.SuppressFinalize(this);
+    }
+
+
     [StructLayout(LayoutKind.Sequential)]
     public struct NMHDR
     {
@@ -453,12 +488,13 @@ namespace AnotherMarkdown
     private const int renderRefreshRateMilliSeconds = 250;
     private const int inputUpdateThresholdMiliseconds = 200;
 
-    private MarkdownPreviewForm _viewerInterface;
+    private MarkdownPreviewForm _previewForm;
     private object _lock = new object();
     private Timer renderTimer;
     private int idMyDlg = -1;
     private int lastTickCount = 0;
-    private bool isPanelVisible => _ptrNppTbData.HasValue;
+    private bool IsPanelVisible { get; set; }
+
     private readonly Func<IScintillaGateway> scintillaGatewayFactory;
     private readonly INotepadPPGateway notepadPPGateway;
     private string iniFilePath;
@@ -468,5 +504,8 @@ namespace AnotherMarkdown
     private Settings settings;
 
     private IntPtr? _ptrNppTbData;
+    private Icon _icon;
+    private Bitmap _iconBmp;
+    private bool _disposedValue;
   }
 }

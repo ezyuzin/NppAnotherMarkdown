@@ -48,8 +48,8 @@ namespace AnotherMarkdown.Forms
       tbPreview.Visible = settings.ShowToolbar;
       statusStrip2.Visible = settings.ShowStatusbar;
 
-      if (webbrowserControl != null) {
-        if (webbrowserControl.GetRenderingEngineName() != settings.RenderingEngine) {
+      if (_webView != null) {
+        if (_webView.GetRenderingEngineName() != settings.RenderingEngine) {
           InitRenderingEngine(settings);
         }
       }
@@ -64,51 +64,23 @@ namespace AnotherMarkdown.Forms
     {
       panel1.Controls.Clear();
 
-      if (webview2Instance == null) {
-        webbrowserControl = new Webview2WebbrowserControl();
-        webbrowserControl.Initialize(settings.ZoomLevel);
-        webbrowserControl.DocumentChanged += (e, args) => {
+      if (_webView == null) {
+        var webview = new Webview2WebbrowserControl();
+        webview.Initialize(settings.ZoomLevel);
+        webview.DocumentChanged += (e, args) => {
           OnDocumentContentChanged?.Invoke(this, args);
         };
-
-        webview2Instance = webbrowserControl;
-      }
-      else {
-        webbrowserControl = webview2Instance;
+        _webView = webview;
       }
 
-      webbrowserControl.AddToHost(panel1);
-      webbrowserControl.RenderingDoneAction = () => {
+      _webView.AddToHost(panel1);
+      _webView.RenderingDoneAction = () => {
         HideScreenshotAndShowBrowser();
       };
-      webbrowserControl.StatusTextChangedAction = (status) => {
+      _webView.StatusTextChangedAction = (status) => {
         toolStripStatusLabel1.Text = status;
       };
     }
-
-    //private RenderResult RenderHtmlInternal(string currentText, string filepath)
-    //{
-    //  var defaultBodyStyle = "";
-    //  var markdownStyleContent = GetCssContent(filepath);
-    //  if (!IsValidFileExtension(currentFilePath)) {
-    //    var invalidExtensionMessageBody = string.Format(MSG_NO_SUPPORTED_FILE_EXT, Path.GetFileName(filepath), settings.SupportedFileExt);
-    //    var invalidExtensionMessage = string.Format(
-    //      DEFAULT_HTML_BASE,
-    //      Path.GetFileName(filepath),
-    //      markdownStyleContent,
-    //      defaultBodyStyle,
-    //      invalidExtensionMessageBody);
-    //    return new RenderResult(invalidExtensionMessage, invalidExtensionMessage, invalidExtensionMessageBody, markdownStyleContent);
-    //  }
-    //  var markdownHtmlBrowser = string.Format(DEFAULT_HTML_BASE, Path.GetFileName(filepath), markdownStyleContent, defaultBodyStyle, resultForBrowser);
-    //  var markdownHtmlFileExport = string.Format(
-    //    DEFAULT_HTML_BASE,
-    //    Path.GetFileName(filepath),
-    //    markdownStyleContent,
-    //    defaultBodyStyle,
-    //    resultForExport);
-    //  return new RenderResult(markdownHtmlBrowser, markdownHtmlFileExport, resultForBrowser, markdownStyleContent);
-    //}
 
     public void RenderMarkdown(string currentText, string filepath)
     {
@@ -121,7 +93,7 @@ namespace AnotherMarkdown.Forms
         }
 
         var context = TaskScheduler.FromCurrentSynchronizationContext();
-        _renderTask = new Task(() => {
+        _renderTask = new Task(async () => {
           try {
             var assetsPath = (!string.IsNullOrEmpty(_settings.AssetsPath) && Directory.Exists(_settings.AssetsPath))
               ? _settings.AssetsPath
@@ -129,8 +101,8 @@ namespace AnotherMarkdown.Forms
 
             var withSyncView = (_settings.SyncViewWithCaretPosition || _settings.SyncViewWithFirstVisibleLine);
 
-            webbrowserControl.SetContent(currentText, currentFilePath, assetsPath, cssFile, withSyncView);
-            webbrowserControl.SetZoomLevel(_settings.ZoomLevel);
+            await _webView.SetContent(currentText, currentFilePath, assetsPath, cssFile, withSyncView);
+            await _webView.SetZoomLevel(_settings.ZoomLevel);
           }
           catch (Exception) { }
         });
@@ -144,7 +116,7 @@ namespace AnotherMarkdown.Forms
     /// </summary>
     private void MakeAndDisplayScreenShot()
     {
-      Bitmap bm = webbrowserControl.MakeScreenshot();
+      Bitmap bm = _webView.MakeScreenshot();
       if (bm != null) {
         pictureBoxScreenshot.Image = bm;
         pictureBoxScreenshot.Visible = true;
@@ -161,7 +133,7 @@ namespace AnotherMarkdown.Forms
 
     public void ScrollToElementWithLineNo(int lineNo)
     {
-      webbrowserControl.ScrollToElementWithLineNo((int)lineNo);
+      _webView.ScrollToElementWithLineNo((int)lineNo);
     }
 
     protected override void WndProc(ref Message m)
@@ -213,29 +185,11 @@ namespace AnotherMarkdown.Forms
       currentFilePath = filepath;
     }
 
-    const string DEFAULT_HTML_BASE = @"<!DOCTYPE html>
-<html>
-    <head>                    
-        <meta http-equiv=""X-UA-Compatible"" content=""IE=edge""></meta>
-        <meta http-equiv=""content-type"" content=""text/html; charset=utf-8""></meta>
-        <title>{0}</title>
-        <style type=""text/css"">
-        {1}
-        </style>
-    </head>
-    <body class=""markdown-body"" style=""{2}"">
-    {3}
-    </body>
-</html>
-";
-    const string MSG_NO_SUPPORTED_FILE_EXT = "<h3>The current file <u>{0}</u> has no valid Markdown file extension.</h3><div>Valid file extensions:{1}</div>";
-
     private Task _renderTask;
     private string htmlContentForExport;
     private Settings _settings;
     private string currentFilePath;
-    private IWebbrowserControl webbrowserControl;
-    private IWebbrowserControl webview2Instance;
+    private Webview2WebbrowserControl _webView;
     private ActionRef<Message> _wndProcCallback;
     private string _defaultAssetsPath;
   }
