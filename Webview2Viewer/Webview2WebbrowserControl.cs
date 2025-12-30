@@ -32,7 +32,7 @@ namespace Webview2Viewer
       _webView = null;
     }
 
-    public async void Initialize(int zoomLevel)
+    public async Task InitializeAsync(int zoomLevel)
     {
       var cacheDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), CONFIG_FOLDER_NAME, "webview2");
       //var props = new Microsoft.Web.WebView2.WinForms.CoreWebView2CreationProperties();
@@ -375,11 +375,6 @@ namespace Webview2Viewer
         p.StartInfo = new ProcessStartInfo(e.Uri);
         p.Start();
       }
-    }
-
-    public string GetRenderingEngineName()
-    {
-      return "EDGE";
     }
 
     private void ExecuteWebviewAction(Action action)

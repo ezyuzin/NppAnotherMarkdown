@@ -15,6 +15,11 @@ namespace AnotherMarkdown.Forms
   {
     public EventHandler<DocumentContentChanged> OnDocumentContentChanged { get; set; }
 
+    public static MarkdownPreviewForm InitViewer(Settings settings, ActionRef<Message> wndProcCallback)
+    {
+      return new MarkdownPreviewForm(settings, wndProcCallback);
+    }
+
     private MarkdownPreviewForm(Settings settings, ActionRef<Message> wndProcCallback)
     {
       InitializeComponent();
@@ -22,9 +27,22 @@ namespace AnotherMarkdown.Forms
       _defaultAssetsPath = (Path.GetDirectoryName(Assembly.GetAssembly(GetType()).Location) + "/assets").Replace("\\", "/");
       _wndProcCallback = wndProcCallback;
       _settings = settings;
-      panel1.Visible = true;
 
-      InitRenderingEngine(settings);
+      var webview = new Webview2WebbrowserControl();
+      webview.DocumentChanged += (e, args) => {
+        OnDocumentContentChanged?.Invoke(this, args);
+      };
+      webview.StatusTextChangedAction = (status) => {
+        toolStripStatusLabel1.Text = status;
+      };
+      webview
+        .InitializeAsync(settings.ZoomLevel)
+        .ContinueWith(t => {
+          panel1.Controls.Clear();
+          webview.AddToHost(panel1);
+          panel1.Visible = true;
+          _webView = webview;
+        });
     }
 
     public void UpdateSettings(Settings settings)
@@ -47,41 +65,12 @@ namespace AnotherMarkdown.Forms
 
       tbPreview.Visible = settings.ShowToolbar;
       statusStrip2.Visible = settings.ShowStatusbar;
-
-      if (_webView != null) {
-        if (_webView.GetRenderingEngineName() != settings.RenderingEngine) {
-          InitRenderingEngine(settings);
-        }
-      }
     }
 
-    public static MarkdownPreviewForm InitViewer(Settings settings, ActionRef<Message> wndProcCallback)
-    {
-      return new MarkdownPreviewForm(settings, wndProcCallback);
-    }
-
-    private void InitRenderingEngine(Settings settings)
-    {
-      panel1.Controls.Clear();
-
-      if (_webView == null) {
-        var webview = new Webview2WebbrowserControl();
-        webview.Initialize(settings.ZoomLevel);
-        webview.DocumentChanged += (e, args) => {
-          OnDocumentContentChanged?.Invoke(this, args);
-        };
-        _webView = webview;
-      }
-
-      _webView.AddToHost(panel1);
-      _webView.StatusTextChangedAction = (status) => {
-        toolStripStatusLabel1.Text = status;
-      };
-    }
 
     public void RenderMarkdown(string currentText, string filepath)
     {
-      if (_renderTask == null || _renderTask.IsCompleted) {
+      if (_webView != null && (_renderTask == null || _renderTask.IsCompleted)) {
         var cssFile = _settings.IsDarkModeEnabled ? _settings.CssDarkModeFileName : _settings.CssFileName;
         if (!File.Exists(cssFile)) {
           cssFile = _settings.IsDarkModeEnabled ? Settings.DefaultDarkModeCssFile : Settings.DefaultCssFile;
@@ -107,7 +96,9 @@ namespace AnotherMarkdown.Forms
 
     public void ScrollToElementWithLineNo(int lineNo)
     {
-      _webView.ScrollToElementWithLineNo((int)lineNo);
+      if (_webView != null) {
+        _webView.ScrollToElementWithLineNo((int) lineNo);
+      }
     }
 
     protected override void WndProc(ref Message m)

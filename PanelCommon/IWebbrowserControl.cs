@@ -19,12 +19,10 @@ namespace PanelCommon
 
     EventHandler<DocumentContentChanged> DocumentChanged { get; set; }
 
-    void Initialize(int zoomLevel);
     void AddToHost(Control host);
     void PrepareContentUpdate(bool preserveVerticalScrollPosition);
     Task SetContent(string content, string documentPath, string assetsPath, string customCssFile, bool syncView);
     Task SetZoomLevel(int zoomLevel);
     void ScrollToElementWithLineNo(int lineNo);
-    string GetRenderingEngineName();
   }
 }
