@@ -166,7 +166,7 @@ jobs:
           path: Release\${{ steps.create-release.outputs.X64_NAME }}
 
       - name: Create GitHub Release (master only)
-#        if: github.ref_name == 'master'        # <-- выполняется только на master
+        if: github.ref_name == 'master'        # <-- выполняется только на master
         id: create_release
         uses: actions/create-release@v1
         with:
