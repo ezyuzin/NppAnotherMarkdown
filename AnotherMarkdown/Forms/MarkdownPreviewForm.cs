@@ -85,8 +85,10 @@ namespace AnotherMarkdown.Forms
             var withSyncView = (_settings.SyncViewWithCaretPosition || _settings.SyncViewWithFirstVisibleLine);
 
             await _webviewInitTask;
-            await _webView.SetContent(currentText, filepath, assetsPath, cssFile, withSyncView);
-            await _webView.SetZoomLevel(_settings.ZoomLevel);
+            if (_webView != null) {
+              await _webView.SetContent(currentText, filepath, assetsPath, cssFile, withSyncView);
+              await _webView.SetZoomLevel(_settings.ZoomLevel);
+            }
           }
           catch (Exception) { }
         });

@@ -89,16 +89,19 @@ namespace AnotherMarkdown
       if (IsPanelVisible && notification.Header.Code == (uint)SciMsg.SCN_UPDATEUI) {
         var scintillaGateway = scintillaGatewayFactory();
         if (settings.SyncViewWithCaretPosition) {
-          if (lastCaretPosition != scintillaGateway.GetCurrentPos()) {
-            lastCaretPosition = scintillaGateway.GetCurrentPos();
-            ScrollToElementAtLineNo(scintillaGateway.GetCurrentLineNumber());
+          var currentPos = scintillaGateway.GetCurrentLineNumber();
+          if (lastCaretPosition != currentPos) {
+            lastCaretPosition = currentPos;
+            ScrollToElementAtLineNo(lastCaretPosition);
           }
         }
         else if (settings.SyncViewWithFirstVisibleLine) {
-          if (currentFirstVisibleLine != scintillaGateway.GetFirstVisibleLine()) {
-            var firstVisibleLine = scintillaGateway.GetFirstVisibleLine();
-            currentFirstVisibleLine = firstVisibleLine;
-            ScrollToElementAtLineNo(firstVisibleLine);
+          var currentPos = scintillaGateway.GetFirstVisibleLine();
+
+          if (currentFirstVisibleLine != currentPos) {
+            currentFirstVisibleLine = currentPos;
+            var docLine = scintillaGateway.DocLineFromVisible(currentPos);
+            ScrollToElementAtLineNo(docLine);
           }
         }
       }
