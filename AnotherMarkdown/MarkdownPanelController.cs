@@ -401,7 +401,7 @@ namespace AnotherMarkdown
           // do not intercept Npp notifications like DMN_CLOSE, etc.
           if (notify.hwndFrom != PluginBase.nppData._nppHandle) {
             PreviewForm.Invalidate(true);
-            if (Environment.Is64BitOperatingSystem) {
+            if (Environment.Is64BitProcess) {
               SetControlParent(PreviewForm, Win32.GetWindowLongPtr, Win32.SetWindowLongPtr);
             }
             else {
