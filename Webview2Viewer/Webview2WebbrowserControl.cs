@@ -62,17 +62,6 @@ namespace Webview2Viewer
       host.Controls.Add(_webView);
     }
 
-    /*public async Task SetScreenshot(PictureBox pictureBox)
-    {
-        pictureBox.Image = null;
-        if (!webViewInitialized) return;
-        var ms = new MemoryStream();
-        await webView.CoreWebView2.CapturePreviewAsync(CoreWebView2CapturePreviewImageFormat.Png, ms);
-        var screenshot = new Bitmap(ms);
-        pictureBox.Image = screenshot;
-        pictureBox.Visible = true;
-    }*/
-
     public void PrepareContentUpdate(bool preserveVerticalScrollPosition)
     {
       if (!_webViewInitialized) {
