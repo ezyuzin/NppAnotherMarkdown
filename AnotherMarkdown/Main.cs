@@ -24,6 +24,8 @@ namespace AnotherMarkdown
     internal static void PluginCleanUp()
     {
       mdpanel.PluginCleanUp();
+      mdpanel.Dispose();
+      mdpanel = null;
     }
 
     // PluginName is used as npp plugin's menu entry

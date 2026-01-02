@@ -53,13 +53,11 @@ namespace AnotherMarkdown.Forms
       var isDarkModeEnabled = settings.IsDarkModeEnabled;
       if (isDarkModeEnabled) {
         tbPreview.BackColor = Color.Black;
-        btnSaveHtml.ForeColor = Color.White;
         statusStrip2.BackColor = Color.Black;
         toolStripStatusLabel1.ForeColor = Color.White;
       }
       else {
         tbPreview.BackColor = SystemColors.Control;
-        btnSaveHtml.ForeColor = SystemColors.ControlText;
         statusStrip2.BackColor = SystemColors.Control;
         toolStripStatusLabel1.ForeColor = SystemColors.ControlText;
       }
@@ -87,8 +85,10 @@ namespace AnotherMarkdown.Forms
             var withSyncView = (_settings.SyncViewWithCaretPosition || _settings.SyncViewWithFirstVisibleLine);
 
             await _webviewInitTask;
-            await _webView.SetContent(currentText, filepath, assetsPath, cssFile, withSyncView);
-            await _webView.SetZoomLevel(_settings.ZoomLevel);
+            if (_webView != null) {
+              await _webView.SetContent(currentText, filepath, assetsPath, cssFile, withSyncView);
+              await _webView.SetZoomLevel(_settings.ZoomLevel);
+            }
           }
           catch (Exception) { }
         });
@@ -107,10 +107,6 @@ namespace AnotherMarkdown.Forms
     {
       _wndProcCallback(ref m);
       base.WndProc(ref m);
-    }
-
-    private void btnSaveHtml_Click(object sender, EventArgs e)
-    {
     }
 
     public bool IsValidFileExtension(string filename)

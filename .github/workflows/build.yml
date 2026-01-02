@@ -1,0 +1,188 @@
+name: Build AnotherMarkdown
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master, dev ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get last artifact version and increment
+        id: version
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $repo = "${{ github.repository }}"
+          $workflow = "${{ github.workflow }}"
+          $branch = "${{ github.ref_name }}"
+
+          Write-Host "Repository: $repo"
+          Write-Host "Branch: $branch"
+
+          $lastCommit = git log -1 --pretty=%B
+          Write-Host "Last commit message: $lastCommit"
+
+          $headers = @{
+            Authorization = "Bearer $env:GITHUB_TOKEN"
+            Accept        = "application/vnd.github+json"
+          }
+
+          $url = "https://api.github.com/repos/$repo/actions/artifacts?per_page=20"
+          $response = Invoke-RestMethod -Uri $url -Headers $headers
+          write-host (ConvertTo-Json $response);
+
+          $artefacts = $response.artifacts |
+            Where-Object { $_.name -like "AnotherMarkdown-*" } |
+            Sort-Object created_at -Descending
+
+          $newVersion = "0.1.0";
+          foreach($entry in $artefacts) {
+            write-host "artefact: $($entry.name)"
+            if ("$($entry.name)" -match '(\d+)\.(\d+)\.(\d+)') {
+              Write-Host "Last artifact created: $($entry.created_at) - $($entry.name)"
+              $major = [int]$matches[1];
+              $minor = [int]$matches[2];
+              $patch = [int]$matches[3];
+              if ($branch -eq "master" -and $lastCommit -imatch '^feat[\(\:]') {
+                $minor += 1;
+                $patch = 0;
+              }
+              else {
+                $patch += 1;
+              }
+              $newVersion = "$major.$minor.$patch"
+              break;
+            }
+          }
+
+          Write-Host "New version: $newVersion"
+          $file = "AnotherMarkdown/Properties/AssemblyInfo.cs"
+          $content = Get-Content $file -Raw
+
+          $content = $content `
+            -replace 'AssemblyVersion\(".*?"\)', "AssemblyVersion(`"$newVersion`")" `
+            -replace 'AssemblyFileVersion\(".*?"\)', "AssemblyFileVersion(`"$newVersion`")"
+
+          Set-Content $file $content -Encoding UTF8
+          "APP_VERSION=$newVersion" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Setup NuGet
+        uses: NuGet/setup-nuget@v1
+
+      - name: Restore NuGet packages
+        shell: pwsh
+        run: |
+          nuget restore AnotherMarkdown.sln
+
+      - name: Build x86
+        shell: pwsh
+        run: |
+          msbuild AnotherMarkdown.sln `
+            /target:Clean,Build `
+            /p:Configuration=Release `
+            /p:Platform=x86
+
+      - name: Build x64
+        shell: pwsh
+        run: |
+          msbuild AnotherMarkdown.sln `
+            /target:Clean,Build `
+            /p:Configuration=Release `
+            /p:Platform=x64
+
+      - name: Prepare Release lib folder
+        shell: pwsh
+        run: |
+          if (Test-Path Release\lib\) {
+            Remove-Item Release\lib\ -Recurse -Force
+          }
+
+          New-Item Release\lib\ -ItemType Directory | Out-Null
+
+          Copy-Item -Force -Recurse `
+            PanelCommon\bin\Release\*.dll `
+            Release\lib\
+
+          Copy-Item -Force -Recurse `
+            Webview2Viewer\bin\Release\*.dll `
+            Release\lib\
+
+          Copy-Item -Force -Recurse `
+            Webview2Viewer\bin\Release\runtimes\ `
+            Release\lib\runtimes\
+
+      - name: Create release ZIPs
+        id: create-release
+        shell: pwsh
+        run: |
+          $branch = "${{ github.ref_name }}"
+          $prefix = ""
+          if ($branch -eq "dev") {
+            $prefix = "dev-"
+          }
+
+          $version = "${{ steps.version.outputs.APP_VERSION }}"
+          function Make-ReleaseFolder($filename, $targetPlatform) {
+            $name = "AnotherMarkdown-$($version)-$($prefix)$($targetPlatform)";
+            $releaseFolder = "Release\$name"
+            if (Test-Path $releaseFolder) {
+                Remove-Item $releaseFolder -Recurse -Force
+            }
+            New-Item -ItemType Directory -Path $releaseFolder | Out-Null
+            Copy-Item -Force -Path $filename -Destination $releaseFolder
+            Copy-Item -Force -Recurse -Path "Release\lib\" -Destination "$releaseFolder\lib"
+            Copy-Item -Force -Recurse -Path "README.md","help","assets","License.txt" -Destination $releaseFolder
+            return $name;
+          }
+          $name = Make-ReleaseFolder "AnotherMarkdown\bin\Release\AnotherMarkdown.dll" "x86"
+          "X86_NAME=$name" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+          $name = Make-ReleaseFolder "AnotherMarkdown\bin\Release-x64\AnotherMarkdown.dll" "x64"
+          "X64_NAME=$name" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Upload x86 release
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.create-release.outputs.X86_NAME }}
+          path: Release\${{ steps.create-release.outputs.X86_NAME }}
+
+      - name: Upload x64 release
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.create-release.outputs.X64_NAME }}
+          path: Release\${{ steps.create-release.outputs.X64_NAME }}
+
+
+      - name: Create ZIPs for release
+        if: github.ref_name == 'master'        # <-- выполняется только на master
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "Release\${{ steps.create-release.outputs.X86_NAME }}\*" -DestinationPath "Release\${{ steps.create-release.outputs.X86_NAME }}.zip" -Force
+          Compress-Archive -Path "Release\${{ steps.create-release.outputs.X64_NAME }}\*" -DestinationPath "Release\${{ steps.create-release.outputs.X64_NAME }}.zip" -Force
+
+      - name: Create GitHub Release (master only)
+        if: github.ref_name == 'master'        # <-- выполняется только на master
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.APP_VERSION }}
+          name: AnotherMarkdown v${{ steps.version.outputs.APP_VERSION }}
+          draft: false
+          prerelease: false
+          files: |
+            Release/${{ steps.create-release.outputs.X86_NAME }}.zip
+            Release/${{ steps.create-release.outputs.X64_NAME }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
