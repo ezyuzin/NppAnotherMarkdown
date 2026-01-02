@@ -46,7 +46,7 @@ jobs:
 
           $newVersion = "0.1.0";
           foreach($entry in $artefacts) {
-            if ($artifact.name -match '(\d+)\.(\d+)\.(\d+)') {
+            if ("$($artifact.name)" -match '(\d+)\.(\d+)\.(\d+)') {
               Write-Host "Last artifact created: $($artifact.created_at) - $($artifact.name)"
               $major = [int]$matches[1];
               $minor = [int]$matches[2];
