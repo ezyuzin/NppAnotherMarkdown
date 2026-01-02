@@ -75,7 +75,7 @@ namespace Webview2Viewer
         lineNo = 0;
       }
       ExecuteWebviewAction(new Action(async () => {
-        var script = _scrollScript.Replace("__LINE__", $"LINE{lineNo}");
+        var script = _scrollScript.Replace("__LINE__", $"{lineNo}");
         await _webView.ExecuteScriptAsync(script);
       }));
     }
@@ -379,10 +379,20 @@ namespace Webview2Viewer
     const string CONFIG_FOLDER_NAME = "MarkdownPanel";
     const string _scrollScript = @"
 (function() {
-  var element = document.getElementById('__LINE__');
-  if (!element) {
-    return;
+  let line = __LINE__;
+  let index = 0;
+  let element = null;
+  while(true) {
+    element = document.getElementById(`LINE${line++}`);
+    if (element) {
+      break;
+    }
+    if (++index === 10) {
+      return;
+    }
   }
+
+
   var spacer = document.getElementById('spacer');
   if (spacer) {
     spacer.parentElement.removeChild(spacer);
