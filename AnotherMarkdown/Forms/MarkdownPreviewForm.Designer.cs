@@ -30,19 +30,16 @@
     /// </summary>
     private void InitializeComponent()
     {
-      System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MarkdownPreviewForm));
       this.panelPreview = new System.Windows.Forms.Panel();
       this.toolStripContainer1 = new System.Windows.Forms.ToolStripContainer();
       this.panel1 = new System.Windows.Forms.Panel();
       this.tbPreview = new System.Windows.Forms.ToolStrip();
-      this.btnSaveHtml = new System.Windows.Forms.ToolStripButton();
       this.statusStrip2 = new System.Windows.Forms.StatusStrip();
       this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
       this.panelPreview.SuspendLayout();
       this.toolStripContainer1.ContentPanel.SuspendLayout();
       this.toolStripContainer1.TopToolStripPanel.SuspendLayout();
       this.toolStripContainer1.SuspendLayout();
-      this.tbPreview.SuspendLayout();
       this.statusStrip2.SuspendLayout();
       this.SuspendLayout();
       // 
@@ -64,7 +61,7 @@
       // toolStripContainer1.ContentPanel
       // 
       this.toolStripContainer1.ContentPanel.Controls.Add(this.panel1);
-      this.toolStripContainer1.ContentPanel.Size = new System.Drawing.Size(811, 573);
+      this.toolStripContainer1.ContentPanel.Size = new System.Drawing.Size(811, 575);
       this.toolStripContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
       this.toolStripContainer1.LeftToolStripPanelVisible = false;
       this.toolStripContainer1.Location = new System.Drawing.Point(0, 0);
@@ -83,29 +80,18 @@
       this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
       this.panel1.Location = new System.Drawing.Point(0, 0);
       this.panel1.Name = "panel1";
-      this.panel1.Size = new System.Drawing.Size(811, 573);
+      this.panel1.Size = new System.Drawing.Size(811, 575);
       this.panel1.TabIndex = 2;
       // 
       // tbPreview
       // 
       this.tbPreview.Dock = System.Windows.Forms.DockStyle.None;
       this.tbPreview.ImageScalingSize = new System.Drawing.Size(20, 20);
-      this.tbPreview.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.btnSaveHtml});
       this.tbPreview.Location = new System.Drawing.Point(0, 0);
       this.tbPreview.Name = "tbPreview";
-      this.tbPreview.Size = new System.Drawing.Size(811, 27);
+      this.tbPreview.Size = new System.Drawing.Size(811, 25);
       this.tbPreview.Stretch = true;
       this.tbPreview.TabIndex = 0;
-      // 
-      // btnSaveHtml
-      // 
-      this.btnSaveHtml.Image = ((System.Drawing.Image)(resources.GetObject("btnSaveHtml.Image")));
-      this.btnSaveHtml.ImageTransparentColor = System.Drawing.Color.Magenta;
-      this.btnSaveHtml.Name = "btnSaveHtml";
-      this.btnSaveHtml.Size = new System.Drawing.Size(93, 24);
-      this.btnSaveHtml.Text = "Save As...";
-      this.btnSaveHtml.Click += new System.EventHandler(this.btnSaveHtml_Click);
       // 
       // statusStrip2
       // 
@@ -140,8 +126,6 @@
       this.toolStripContainer1.TopToolStripPanel.PerformLayout();
       this.toolStripContainer1.ResumeLayout(false);
       this.toolStripContainer1.PerformLayout();
-      this.tbPreview.ResumeLayout(false);
-      this.tbPreview.PerformLayout();
       this.statusStrip2.ResumeLayout(false);
       this.statusStrip2.PerformLayout();
       this.ResumeLayout(false);
@@ -157,7 +141,6 @@
     private System.Windows.Forms.Panel panelPreview;
     private System.Windows.Forms.ToolStripContainer toolStripContainer1;
     private System.Windows.Forms.ToolStrip tbPreview;
-    private System.Windows.Forms.ToolStripButton btnSaveHtml;
     private System.Windows.Forms.StatusStrip statusStrip2;
     private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel1;
   }
