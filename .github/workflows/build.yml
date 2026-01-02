@@ -2,7 +2,7 @@ name: Build AnotherMarkdown
 
 on:
   push:
-    branches: [ master, dev ]
+    branches: [ master ]
   pull_request:
     branches: [ dev ]
   workflow_dispatch:
@@ -46,8 +46,9 @@ jobs:
 
           $newVersion = "0.1.0";
           foreach($entry in $artefacts) {
-            if ("$($artifact.name)" -match '(\d+)\.(\d+)\.(\d+)') {
-              Write-Host "Last artifact created: $($artifact.created_at) - $($artifact.name)"
+            write-host "artefact: $($entry.name)"
+            if ("$($entry.name)" -match '(\d+)\.(\d+)\.(\d+)') {
+              Write-Host "Last artifact created: $($entry.created_at) - $($entry.name)"
               $major = [int]$matches[1];
               $minor = [int]$matches[2];
               $patch = [int]$matches[3];
