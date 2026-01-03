@@ -10,7 +10,7 @@ const markdownScripts = [
   script.defer = true;
   document.head.appendChild(script);
   return new Promise((resolve) => {
-    script.onload = () => resolve();    
+    script.onload = () => resolve();
   });
 });
 
@@ -20,9 +20,10 @@ window.viewPlugin = (() => {
   async function importMarkdown(container, url, options) {
     options = {
       lineMark: false,
+      modified: false,
       ...(options || {})
     }
-    
+
     await Promise.all(markdownScripts);
 
     const response = await fetch(url);
@@ -36,6 +37,7 @@ window.viewPlugin = (() => {
 
     const renderCompleted = Promise.withResolvers();
     context.documentReady = renderCompleted.promise;
+    context.postRender = [];
 
     const md = window.markdownit({
       html: true
@@ -54,6 +56,10 @@ window.viewPlugin = (() => {
       html = applyLineMarkers(html);
     }
     container.innerHTML = html;
+    if (context.postRender.length !== 0) {
+      await Promise.all(context.postRender.map(li => li()));
+      context.postRender = [];
+    }
     renderCompleted.resolve();
 
     container.querySelectorAll("script").forEach((oldScript) => {
@@ -197,28 +203,55 @@ window.viewPlugin = (() => {
   }
 
   function embedPano360() {
-    let registered = false;
-    let panoramas = [];
+    let panoIdSeq = 0;
     return {
       name: "pano360",
       allowInline: false,
-      setup: (config) => {
-        if (!registered) {
-          registered = true;
+      setup: (configFile) => {
+        if (!context['pano360.loader']) {
+          loader = Promise.withResolvers();
           registerCss("pannellum.css");
-          registerJs('pannellum.js').onload = async() => {
-            for (let id = 0; id < panoramas.length; id++) {
-              const configFile = panoramas[id];
-              const config = await (await fetch(configFile)).json();
-              config.default.basePath = (configFile.match(/^(.*)(\/)[^\/]*$/))[1] + "/";
-              pannellum.viewer(`pano${id + 1}`, config);
+          registerJs('pannellum.js').onload = () => loader.resolve();
+          context['pano360.loader'] = loader.promise;
+        }
+
+        const panoramaId = ++panoIdSeq;
+        const sceneId = `pano360.scene[${panoramaId}]`;
+        if (context[sceneId]) {
+          const element = document.getElementById(`pano${panoramaId}`);
+          context[sceneId].div = element;
+          element.parentElement.removeChild(element);
+        }
+
+        context.postRender.push(async() => {
+          const config = await (await fetch(configFile)).json();
+          config.default.basePath = (configFile.match(/^(.*)(\/)[^\/]*$/))[1] + "/";
+
+          const scene = {
+            elementId: `pano${panoramaId}`,
+            configText: JSON.stringify(config)
+          }
+
+          if (context[sceneId]) {
+            if (context[sceneId].div && context[sceneId].configText === scene.configText) {
+              const element = document.getElementById(scene.elementId);
+              if (element) {
+                const parentElement = element.parentElement;
+                parentElement.removeChild(element);
+                parentElement.appendChild(context[sceneId].div);
+                delete context[sceneId].div;
+                return;
+              }
             }
           }
-        }
-        panoramas.push(config);
+          await context['pano360.loader'];
+          context[sceneId] = scene;
+          pannellum.viewer(`pano${panoramaId}`, config);
+        });
+
         return `
 <div class="panorama">
-  <div id="pano${panoramas.length}"></div>
+  <div id="pano${panoramaId}"></div>
 </div>`
       }
     }
