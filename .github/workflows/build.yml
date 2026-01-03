@@ -178,7 +178,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.version.outputs.APP_VERSION }}
-          name: AnotherMarkdown v${{ steps.version.outputs.APP_VERSION }}
+          name: NppAnotherMarkdown ${{ steps.version.outputs.APP_VERSION }}
           draft: false
           prerelease: false
           files: |
