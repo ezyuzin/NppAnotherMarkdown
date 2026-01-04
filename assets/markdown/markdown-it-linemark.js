@@ -31,13 +31,25 @@ module.exports = function(md, options) {
 
     if (token.type === 'text' && token.content && context.nline !== -1) {
       let a = token.content.trim();
+      if (a.length === 0) {
+        return false;
+      }
+
       let b = context.line;
-      let len = Math.min(a.length, b.length);
-      a = (a.length > len) ? a.slice(0, len) : a;
-      b = (b.length > len) ? b.slice(0, len) : b;
       let match = (a == b) ? true : false;
+
       if (!match) {
-        b = b.replace(/^(\*+|\=+|#+|\-+)/, '').trim();
+        match = b.includes(a);
+      }
+      if (!match) {
+        let len = Math.min(a.length, b.length);
+        a = (a.length > len) ? a.slice(0, len) : a;
+        b = (b.length > len) ? b.slice(0, len) : b;
+        match = (a == b) ? true : false;
+      }
+      if (!match) {
+        a = token.content.trim();
+        b = context.line.replace(/^(\*+|\=+|#+|\-+)/, '').trim();
         len = Math.min(a.length, b.length);
         a = (a.length > len) ? a.slice(0, len) : a;
         b = (b.length > len) ? b.slice(0, len) : b;
@@ -49,6 +61,7 @@ module.exports = function(md, options) {
         moveToNextLine(context);
         return state;
       }
+      return false;
     }
     if (token.nesting == -1) {
       return false

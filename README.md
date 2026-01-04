@@ -13,14 +13,14 @@ Also,
   Open index.pano360.json in Notepad++ for editing, the AnotherMarkdown preview makes scene editing easier.
   
 * Added a plugin for displaying QR codes
-  `{% qrcode text="12345" %}`
+`{% qrcode text="12345" %}`
 
 ![](example/pano/preview.gif)
 
 
 ### Current Version
 
-The current version is **0.1.1** and can be found [here](https://github.com/ezyuzin/NppAnotherMarkdown/releases)
+The current version can be found [here](https://github.com/ezyuzin/NppAnotherMarkdown/releases)
 
 {% qrcode text="https://github.com/ezyuzin/NppAnotherMarkdown/releases" %}
 
@@ -44,8 +44,8 @@ Windows blocks downloaded DLLs by default. That means you likely get the followi
 
 > Failed to load <br>
 > AnotherMarkdown.dll is not compatible with the current version of Notepad++
-	
-Make sure to unblock __all__ DLLs of the plugin (also DLLs in subfolders).
+
+Make sure to unblock __all__ DLLs of the plugin (also DLLs in subfolders).  
 ![npp-unblock](help/npp-unblock.png "Unblock all DLLs")
 
 **Note for Windows 7 users:**
@@ -74,37 +74,11 @@ To open the settings for this plugin: Plugins -> AnotherMarkdown -> Settings
 * #### Zoom Level
     This allows you to set the zoom level of the preview
 
-* #### Automatic HTML Output
-    This allows you to select a file to save the rendered HTML to every time the preview is rendered. This is a way to automatically save the rendered content to use elsewhere. Leaving this empty disables the automatic saving.  
-    __Note: This is a global setting, so all previewed documents will save to the same file.__
-
-* #### Allow all file extensions
-   This option allows you to skip file extension checking. Every active file will be processed by the markdown converter.
-   But be careful, this option may have undesired effects. (e.g. rendering large logs or large source code files can be slow)
-   The input field for supported file extensions is disabled when this option is checked.
-
-* #### Supported File Extensions
-    This allows you to define a list of file extensions, which are supported and displayed in Markdown Panel.
-	Other file type won't be displayed (there will be a warning).
-	The file extensions have to be separated by a comma `,` - character.
-	No input allowed when option "Allow all file extensions" is checked.
-
-* #### Automatically show panel for supported files
-    When this option is checked, Markdown Panel will open the preview window automatically for files with a supported extension.
-	The preview will be closed for files with no supported extension.
-	
-
 * #### Show Toolbar in Preview Window
     Checking this box will enable the toolbar in the preview window. By default, this is unchecked.
 
 * #### Show Statusbar in Preview Window (Preview Links)
     Checking this box will show the status bar, which previews urls for links. By default, this is unchecked.
-
-
-### Preview Window Toolbar
-
-* #### Save As... ![save-btn](help/save-btn.png)
-    Clicking this button allows you to save the rendered preview as an HTML document.
 
 ### Synchronize viewer with caret position
 

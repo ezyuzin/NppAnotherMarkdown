@@ -10,7 +10,6 @@ namespace AnotherMarkdown.Forms
     void UpdateSettings(Settings settings);
     void RenderMarkdown(string currentText, string filepath);
     void ScrollToElementWithLineNo(int lineNo);
-    bool IsValidFileExtension(string filename);
 
     EventHandler<DocumentContentChanged> OnDocumentContentChanged { get; set; }
   }

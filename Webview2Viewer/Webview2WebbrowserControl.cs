@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Runtime;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -74,10 +75,26 @@ namespace Webview2Viewer
       if (lineNo <= 0) {
         lineNo = 0;
       }
-      ExecuteWebviewAction(new Action(async () => {
-        var script = _scrollScript.Replace("__LINE__", $"{lineNo}");
-        await _webView.ExecuteScriptAsync(script);
-      }));
+
+      if (_webViewInitialized && _webView != null) {
+
+        if (scrollTo.HasValue) {
+          scrollTo = lineNo;
+          return;
+        }
+        scrollTo = lineNo;
+        var context = TaskScheduler.FromCurrentSynchronizationContext();
+        var scrollTask = new Task(async () => {
+          await Task.Delay(50);
+          var value = scrollTo.Value;
+          scrollTo = null;
+          ExecuteWebviewAction(async () => {
+            var script = _scrollScript.Replace("__LINE__", $"{value}");
+            await _webView.ExecuteScriptAsync(script);
+          });
+        });
+        scrollTask.Start(context);
+      }
     }
 
     private string UrlPathEncode(string path)
@@ -369,17 +386,25 @@ namespace Webview2Viewer
     private void ExecuteWebviewAction(Action action)
     {
       try {
-        if (_webViewInitialized) {
+        if (_webViewInitialized && _webView != null) {
           _webView.Invoke(action);
         }
       }
       catch (Exception) { }
     }
 
-    const string CONFIG_FOLDER_NAME = "MarkdownPanel";
+    const string CONFIG_FOLDER_NAME = "AnotherMarkdown";
     const string _scrollScript = @"
 (function() {
   let line = __LINE__;
+  if (line === 0) {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+    return;
+  }
+
   let index = 0;
   let element = null;
   while(true) {
@@ -428,6 +453,7 @@ namespace Webview2Viewer
     private string _assetPath;
     private string _documentPath;
     private string _documentUri;
+    private int? scrollTo;
 
     private bool _syncView;
     private CoreWebView2Environment _environment = null;
