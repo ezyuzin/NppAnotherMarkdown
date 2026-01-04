@@ -15,7 +15,10 @@ const markdownScripts = [
 });
 
 window.viewPlugin = (() => {
-  let context = {};
+  let context = {
+    source: "",
+    sourceUrl: ""
+  };
 
   async function importMarkdown(container, url, options) {
     options = {
@@ -31,9 +34,16 @@ window.viewPlugin = (() => {
     const decoder = new TextDecoder(detect_charset(new Uint8Array(data)));
     let source = decoder.decode(data);
 
+    if (context.sourceUrl === url && context.source === source) {
+      return;
+    }
+
     if (options.lineMark) {
       source = setLineMarkers(source);
     }
+
+    context.source = source;
+    context.sourceUrl = url;
 
     const renderCompleted = Promise.withResolvers();
     context.documentReady = renderCompleted.promise;
@@ -43,13 +53,13 @@ window.viewPlugin = (() => {
       html: true
     });
     md.use(window.markdownItAttrs);
-    md.use(window.markdownitTaskLists);
     md.use(window.markdownItEmbedd, {
       config: [
         embedPano360(),
         embedQrCode()
       ]
     });
+    md.use(...markdownItTaskLists());
 
     let html = md.render(source);
     if (options.lineMark) {
@@ -104,6 +114,48 @@ window.viewPlugin = (() => {
         acc[key] = value;
         return acc;
       }, {});
+  }
+
+  function markdownItTaskLists() {
+    async function onTaskChanged(e) {
+      const target = e.target;
+      const nline = target.attributes['data-line'].value;
+      let symbol = target.attributes['data-symbol'].value;
+
+      const lines = context.source.split("\n");
+      let line = lines[nline];
+      const pattern = `[${symbol}]`;
+      let pos = line.indexOf(pattern);
+      if (pos !== -1) {
+        let newline = line.substring(0, pos);
+        symbol = (target.checked ? "x" : " ");
+        target.attributes['data-symbol'].value = symbol;
+
+        newline += ("[" + symbol + "]");
+        newline += line.substring(pos + pattern.length);
+        lines[nline] = newline;
+
+        context.source = lines.join("\n");
+        await fetch(context.sourceUrl, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "text/text"
+          },
+          body: context.source
+        });
+      }
+    }
+
+    context.postRender.push(async() => {
+      const inputs = Array.from(document.getElementsByClassName('task-list-item-checkbox')).filter(li => li.localName === "input" && li.type === 'checkbox');
+      for(let input of inputs) {
+        input.onchange = onTaskChanged;
+      }
+    });
+    return [
+      window.markdownItTaskLists, {
+      enabled: true
+    }];
   }
 
   function embedQrCode() {
