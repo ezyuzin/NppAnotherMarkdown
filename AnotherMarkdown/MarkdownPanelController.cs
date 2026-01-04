@@ -92,7 +92,9 @@ namespace AnotherMarkdown
           var currentPos = scintillaGateway.GetCurrentLineNumber();
           if (lastCaretPosition != currentPos) {
             lastCaretPosition = currentPos;
-            ScrollToElementAtLineNo(lastCaretPosition);
+            if (_skipScrollEventDue < DateTime.UtcNow) {
+              ScrollToElementAtLineNo(lastCaretPosition);
+            }
           }
         }
         else if (settings.SyncViewWithFirstVisibleLine) {
@@ -100,8 +102,10 @@ namespace AnotherMarkdown
 
           if (currentFirstVisibleLine != currentPos) {
             currentFirstVisibleLine = currentPos;
-            var docLine = scintillaGateway.DocLineFromVisible(currentPos);
-            ScrollToElementAtLineNo(docLine);
+            if (_skipScrollEventDue < DateTime.UtcNow) {
+              var docLine = scintillaGateway.DocLineFromVisible(currentPos);
+              ScrollToElementAtLineNo(docLine);
+            }
           }
         }
       }
@@ -214,6 +218,10 @@ namespace AnotherMarkdown
       var scintillaGateway = scintillaGatewayFactory();
       int pos = scintillaGateway.GetCurrentPos();
       scintillaGateway.SetText(args.Content);
+
+      if (settings.SyncViewWithCaretPosition || settings.SyncViewWithFirstVisibleLine) {
+        _skipScrollEventDue = DateTime.UtcNow.AddSeconds(1);
+      }
 
       scintillaGateway.GotoPos(pos);
       scintillaGateway.ScrollCaret();
@@ -509,5 +517,6 @@ namespace AnotherMarkdown
     private Icon _icon;
     private Bitmap _iconBmp;
     private bool _disposedValue;
+    private DateTime _skipScrollEventDue = DateTime.MinValue;
   }
 }
