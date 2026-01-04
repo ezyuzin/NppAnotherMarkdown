@@ -3,6 +3,7 @@ const markdownScripts = [
  "http://assets.example/markdown/markdown-it@14.1.0.min.js",
  "http://assets.example/markdown/markdown-it-attrs@4.1.0.js",
  "http://assets.example/markdown/markdown-it-task-lists.min.js",
+ "http://assets.example/markdown/markdown-it-linemark.js",
  "http://assets.example/markdown/markdown-it-embed.js"
 ].map(li => {
   const script = document.createElement("script");
@@ -17,7 +18,8 @@ const markdownScripts = [
 window.viewPlugin = (() => {
   let context = {
     source: "",
-    sourceUrl: ""
+    sourceUrl: "",
+    lineMark: false
   };
 
   async function importMarkdown(container, url, options) {
@@ -34,16 +36,13 @@ window.viewPlugin = (() => {
     const decoder = new TextDecoder(detect_charset(new Uint8Array(data)));
     let source = decoder.decode(data);
 
-    if (context.sourceUrl === url && context.source === source) {
+    if (context.sourceUrl === url && context.source === source && context.lineMark === options.lineMark) {
       return;
-    }
-
-    if (options.lineMark) {
-      source = setLineMarkers(source);
     }
 
     context.source = source;
     context.sourceUrl = url;
+    context.lineMark = options.lineMark;
 
     const renderCompleted = Promise.withResolvers();
     context.documentReady = renderCompleted.promise;
@@ -60,11 +59,11 @@ window.viewPlugin = (() => {
       ]
     });
     md.use(...markdownItTaskLists());
+    if (options.lineMark) {
+      md.use(window.markdownItLineMark);
+    }
 
     let html = md.render(source);
-    if (options.lineMark) {
-      html = applyLineMarkers(html);
-    }
     container.innerHTML = html;
     if (context.postRender.length !== 0) {
       await Promise.all(context.postRender.map(li => li()));
@@ -308,75 +307,5 @@ window.viewPlugin = (() => {
       }
     }
   }
-
-  function setLineMarkers(content) {
-    let tags = []
-    return content.replaceAll("\r\n", "\n")
-      .split("\n")
-      .map((li, num) => {
-        let result = '';
-        while(li.length !== 0) {
-          if (tags.length !== 0) {
-            const tag = tags.pop();
-            let pos = li.indexOf(tag);
-            if (pos !== -1) {
-              result += li.substring(0, pos + tag.length);
-              li = li.substring(pos + tag.length);
-              continue;
-            }
-            tags.push(tag);
-            result += li;
-            li = '';
-            break;
-          }
-
-          let match = li.match(/^(\s+|#+|\-+|\=+|\*+|\>+|\|+)/);
-          match = match || li.match(/^(\d+\.)/)
-          if (match) {
-            result += match[1];
-            li = li.substring(match[1].length);
-            continue;
-          }
-          if (li.startsWith('{%')) {
-            li = li.substring(2);
-            result += "{%";
-            tags.push("%}");
-            continue;
-          }
-          if (li.startsWith('```')) {
-            li = li.substring(3);
-            result += "```";
-            tags.push("```");
-            continue;
-          }
-          match = li.match(/^<(br|hr)(\s*\/)?>/)
-          if (match) {
-            li = li.substring(match[0].length);
-            result += match[0];
-            continue;
-          }
-
-          match = li.match(/^<([^\s\/>]+)([^\/]*)>/)
-          if (match) {
-            li = li.substring(match[0].length);
-            result += match[0];
-            tags.push(`</${match[1]}>`);
-            continue;
-          }
-          break;
-        }
-        if (li !== "") {
-          result += (tags.length === 0)
-            ? `MLINE:${num}:` + li
-            : li
-        }
-        return result;
-      })
-      .join("\r\n");
-  }
-  function applyLineMarkers(html) {
-    return html.replaceAll(/MLINE:(\d+):/g, '<a id="LINE$1"></a>');
-  }
-
   return importMarkdown;
 })();
