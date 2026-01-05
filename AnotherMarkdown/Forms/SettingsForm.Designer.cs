@@ -40,14 +40,9 @@
       this.btnChooseDarkmodeCss = new System.Windows.Forms.Button();
       this.tbDarkmodeCssFile = new System.Windows.Forms.TextBox();
       this.label4 = new System.Windows.Forms.Label();
-      this.label5 = new System.Windows.Forms.Label();
-      this.tbFileExt = new System.Windows.Forms.TextBox();
-      this.btnDefaultFileExt = new System.Windows.Forms.Button();
-      this.cbAutoShowPanel = new System.Windows.Forms.CheckBox();
       this.label6 = new System.Windows.Forms.Label();
       this.cbShowToolbar = new System.Windows.Forms.CheckBox();
       this.cbShowStatusbar = new System.Windows.Forms.CheckBox();
-      this.cbAllowAllExtensions = new System.Windows.Forms.CheckBox();
       this.btnDefaultAssetDir = new System.Windows.Forms.Button();
       this.btnChooseAssetsDir = new System.Windows.Forms.Button();
       this.tbAssetsPath = new System.Windows.Forms.TextBox();
@@ -91,7 +86,7 @@
       // btnSave
       // 
       this.btnSave.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-      this.btnSave.Location = new System.Drawing.Point(468, 548);
+      this.btnSave.Location = new System.Drawing.Point(468, 353);
       this.btnSave.Name = "btnSave";
       this.btnSave.Size = new System.Drawing.Size(105, 36);
       this.btnSave.TabIndex = 20;
@@ -103,7 +98,7 @@
       // 
       this.btnCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
       this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-      this.btnCancel.Location = new System.Drawing.Point(579, 548);
+      this.btnCancel.Location = new System.Drawing.Point(579, 353);
       this.btnCancel.Name = "btnCancel";
       this.btnCancel.Size = new System.Drawing.Size(105, 36);
       this.btnCancel.TabIndex = 21;
@@ -192,7 +187,7 @@
       this.statusStrip1.ImageScalingSize = new System.Drawing.Size(20, 20);
       this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.sblInvalidHtmlPath});
-      this.statusStrip1.Location = new System.Drawing.Point(0, 596);
+      this.statusStrip1.Location = new System.Drawing.Point(0, 401);
       this.statusStrip1.Name = "statusStrip1";
       this.statusStrip1.Size = new System.Drawing.Size(696, 22);
       this.statusStrip1.TabIndex = 16;
@@ -248,46 +243,6 @@
       this.label4.TabIndex = 17;
       this.label4.Text = "Darkmode CSS File:";
       // 
-      // label5
-      // 
-      this.label5.Location = new System.Drawing.Point(12, 397);
-      this.label5.Name = "label5";
-      this.label5.Size = new System.Drawing.Size(127, 39);
-      this.label5.TabIndex = 21;
-      this.label5.Text = "Supported File Extensions:";
-      // 
-      // tbFileExt
-      // 
-      this.tbFileExt.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-      this.tbFileExt.Location = new System.Drawing.Point(170, 397);
-      this.tbFileExt.Name = "tbFileExt";
-      this.tbFileExt.Size = new System.Drawing.Size(386, 25);
-      this.tbFileExt.TabIndex = 15;
-      this.tbFileExt.TextChanged += new System.EventHandler(this.tbFileExt_TextChanged);
-      // 
-      // btnDefaultFileExt
-      // 
-      this.btnDefaultFileExt.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-      this.btnDefaultFileExt.Location = new System.Drawing.Point(607, 397);
-      this.btnDefaultFileExt.Name = "btnDefaultFileExt";
-      this.btnDefaultFileExt.Size = new System.Drawing.Size(73, 28);
-      this.btnDefaultFileExt.TabIndex = 16;
-      this.btnDefaultFileExt.Text = "Default";
-      this.btnDefaultFileExt.UseVisualStyleBackColor = true;
-      this.btnDefaultFileExt.Click += new System.EventHandler(this.btnDefaultFileExt_Click);
-      // 
-      // cbAutoShowPanel
-      // 
-      this.cbAutoShowPanel.AutoSize = true;
-      this.cbAutoShowPanel.Location = new System.Drawing.Point(170, 439);
-      this.cbAutoShowPanel.Name = "cbAutoShowPanel";
-      this.cbAutoShowPanel.Size = new System.Drawing.Size(290, 21);
-      this.cbAutoShowPanel.TabIndex = 17;
-      this.cbAutoShowPanel.Text = "Automatically show panel for supported files";
-      this.cbAutoShowPanel.UseVisualStyleBackColor = true;
-      this.cbAutoShowPanel.CheckedChanged += new System.EventHandler(this.cbAutoShowPanel_CheckedChanged);
-      // 
       // label6
       // 
       this.label6.AutoSize = true;
@@ -300,7 +255,7 @@
       // cbShowToolbar
       // 
       this.cbShowToolbar.AutoSize = true;
-      this.cbShowToolbar.Location = new System.Drawing.Point(170, 466);
+      this.cbShowToolbar.Location = new System.Drawing.Point(170, 279);
       this.cbShowToolbar.Name = "cbShowToolbar";
       this.cbShowToolbar.Size = new System.Drawing.Size(223, 21);
       this.cbShowToolbar.TabIndex = 18;
@@ -311,24 +266,13 @@
       // cbShowStatusbar
       // 
       this.cbShowStatusbar.AutoSize = true;
-      this.cbShowStatusbar.Location = new System.Drawing.Point(170, 495);
+      this.cbShowStatusbar.Location = new System.Drawing.Point(170, 308);
       this.cbShowStatusbar.Name = "cbShowStatusbar";
       this.cbShowStatusbar.Size = new System.Drawing.Size(321, 21);
       this.cbShowStatusbar.TabIndex = 19;
       this.cbShowStatusbar.Text = "Show Statusbar in Preview Window (Preview Links)";
       this.cbShowStatusbar.UseVisualStyleBackColor = true;
       this.cbShowStatusbar.CheckedChanged += new System.EventHandler(this.cbShowStatusbar_CheckedChanged);
-      // 
-      // cbAllowAllExtensions
-      // 
-      this.cbAllowAllExtensions.AutoSize = true;
-      this.cbAllowAllExtensions.Location = new System.Drawing.Point(170, 357);
-      this.cbAllowAllExtensions.Name = "cbAllowAllExtensions";
-      this.cbAllowAllExtensions.Size = new System.Drawing.Size(164, 21);
-      this.cbAllowAllExtensions.TabIndex = 14;
-      this.cbAllowAllExtensions.Text = "Allow all file extensions";
-      this.cbAllowAllExtensions.UseVisualStyleBackColor = true;
-      this.cbAllowAllExtensions.CheckedChanged += new System.EventHandler(this.cbAllowAllExtensions_CheckedChanged);
       // 
       // btnDefaultAssetDir
       // 
@@ -367,17 +311,12 @@
       this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 17F);
       this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
       this.CancelButton = this.btnCancel;
-      this.ClientSize = new System.Drawing.Size(696, 618);
+      this.ClientSize = new System.Drawing.Size(696, 423);
       this.Controls.Add(this.btnDefaultAssetDir);
       this.Controls.Add(this.btnChooseAssetsDir);
       this.Controls.Add(this.tbAssetsPath);
-      this.Controls.Add(this.cbAllowAllExtensions);
       this.Controls.Add(this.label6);
       this.Controls.Add(this.cbShowStatusbar);
-      this.Controls.Add(this.cbAutoShowPanel);
-      this.Controls.Add(this.btnDefaultFileExt);
-      this.Controls.Add(this.tbFileExt);
-      this.Controls.Add(this.label5);
       this.Controls.Add(this.btnDefaultDarkmodeCss);
       this.Controls.Add(this.btnChooseDarkmodeCss);
       this.Controls.Add(this.tbDarkmodeCssFile);
@@ -434,14 +373,9 @@
     private System.Windows.Forms.Button btnChooseDarkmodeCss;
     private System.Windows.Forms.TextBox tbDarkmodeCssFile;
     private System.Windows.Forms.Label label4;
-    private System.Windows.Forms.Label label5;
-    private System.Windows.Forms.TextBox tbFileExt;
-    private System.Windows.Forms.Button btnDefaultFileExt;
-    private System.Windows.Forms.CheckBox cbAutoShowPanel;
     private System.Windows.Forms.Label label6;
     private System.Windows.Forms.CheckBox cbShowToolbar;
     private System.Windows.Forms.CheckBox cbShowStatusbar;
-    private System.Windows.Forms.CheckBox cbAllowAllExtensions;
     private System.Windows.Forms.Button btnDefaultAssetDir;
     private System.Windows.Forms.Button btnChooseAssetsDir;
     private System.Windows.Forms.TextBox tbAssetsPath;

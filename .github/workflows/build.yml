@@ -71,6 +71,14 @@ jobs:
           $content = $content `
             -replace 'AssemblyVersion\(".*?"\)', "AssemblyVersion(`"$newVersion`")" `
             -replace 'AssemblyFileVersion\(".*?"\)', "AssemblyFileVersion(`"$newVersion`")"
+            
+          $copyright = [regex]::Match($content,  'AssemblyCopyright\("(.*?)"\)');
+          $copyrightText = $copyright.Groups[1].Value;
+          $match = [regex]::Match($copyrightText, '^(.*\s)(20\d\d)$');
+          if ($match.Success -and (([int]::Parse($match.Groups[2].Value)) -lt [datetime]::UtcNow.Year)) {
+            $copyrightText += "-" + [datetime]::UtcNow.Year.ToString();
+            $content = $content.Replace($copyright.Groups[0].Value, 'AssemblyCopyright("' + $copyrightText + '")');
+          }          
 
           Set-Content $file $content -Encoding UTF8
           "APP_VERSION=$newVersion" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
@@ -164,7 +172,6 @@ jobs:
           name: ${{ steps.create-release.outputs.X64_NAME }}
           path: Release\${{ steps.create-release.outputs.X64_NAME }}
 
-
       - name: Create ZIPs for release
         if: github.ref_name == 'master'        # <-- выполняется только на master
         shell: pwsh
@@ -178,7 +185,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.version.outputs.APP_VERSION }}
-          name: AnotherMarkdown v${{ steps.version.outputs.APP_VERSION }}
+          name: NppAnotherMarkdown ${{ steps.version.outputs.APP_VERSION }}
           draft: false
           prerelease: false
           files: |

@@ -4,8 +4,11 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using AnotherMarkdown.Entities;
 using AnotherMarkdown.Forms;
@@ -23,7 +26,7 @@ namespace AnotherMarkdown
         if (_previewForm == null) {
           lock (_lock) {
             if (_previewForm == null) {
-              _previewForm = MarkdownPreviewForm.InitViewer(settings, HandleWndProc);
+              _previewForm = MarkdownPreviewForm.InitViewer(_settings, HandleWndProc);
               _previewForm.OnDocumentContentChanged += (s, e) => {
                 DocumentChanged(e);
               };
@@ -39,13 +42,9 @@ namespace AnotherMarkdown
       AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
 
       scintillaGatewayFactory = PluginBase.GetGatewayFactory();
-      notepadPPGateway = new NotepadPPGateway();
+      _nppGateway = new NotepadPPGateway();
       SetIniFilePath();
-      settings = LoadSettingsFromIni();
-
-      renderTimer = new Timer();
-      renderTimer.Interval = renderRefreshRateMilliSeconds;
-      renderTimer.Tick += OnRenderTimerElapsed;
+      _settings = LoadSettingsFromIni();
     }
 
     private Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
@@ -64,89 +63,104 @@ namespace AnotherMarkdown
     private Settings LoadSettingsFromIni()
     {
       Settings settings = new Settings();
-      settings.SyncViewWithCaretPosition = (Win32.GetPrivateProfileInt("Options", "SyncViewWithCaretPosition", 0, iniFilePath) != 0);
-      settings.SyncViewWithFirstVisibleLine = (Win32.GetPrivateProfileInt("Options", "SyncWithFirstVisibleLine", 0, iniFilePath) != 0);
+      settings.SyncViewWithCaretPosition = (Win32.GetPrivateProfileInt("Options", "SyncViewWithCaretPosition", 0, _iniFilePath) != 0);
+      settings.SyncViewWithFirstVisibleLine = (Win32.GetPrivateProfileInt("Options", "SyncWithFirstVisibleLine", 0, _iniFilePath) != 0);
 
-      settings.PreProcessorCommandFilename = Win32.ReadIniValue("Options", "PreProcessorExe", iniFilePath, "");
-      settings.PreProcessorArguments = Win32.ReadIniValue("Options", "PreProcessorArguments", iniFilePath, "");
-      settings.PostProcessorCommandFilename = Win32.ReadIniValue("Options", "PostProcessorExe", iniFilePath, "");
-      settings.PostProcessorArguments = Win32.ReadIniValue("Options", "PostProcessorArguments", iniFilePath, "");
-      settings.AssetsPath = Win32.ReadIniValue("Options", "AssetsPath", iniFilePath, "");
-      settings.CssFileName = Win32.ReadIniValue("Options", "CssFileName", iniFilePath, "style.css");
-      settings.CssDarkModeFileName = Win32.ReadIniValue("Options", "CssDarkModeFileName", iniFilePath, "style-dark.css");
-      settings.ZoomLevel = Win32.GetPrivateProfileInt("Options", "ZoomLevel", 130, iniFilePath);
-      settings.ShowToolbar = PluginUtils.ReadIniBool("Options", "ShowToolbar", iniFilePath);
-      settings.ShowStatusbar = PluginUtils.ReadIniBool("Options", "ShowStatusbar", iniFilePath);
-      settings.SupportedFileExt = Win32.ReadIniValue("Options", "SupportedFileExt", iniFilePath, Settings.DEFAULT_SUPPORTED_FILE_EXT);
-      settings.AllowAllExtensions = PluginUtils.ReadIniBool("Options", "AllowAllExtensions", iniFilePath);
+      settings.PreProcessorCommandFilename = Win32.ReadIniValue("Options", "PreProcessorExe", _iniFilePath, "");
+      settings.PreProcessorArguments = Win32.ReadIniValue("Options", "PreProcessorArguments", _iniFilePath, "");
+      settings.PostProcessorCommandFilename = Win32.ReadIniValue("Options", "PostProcessorExe", _iniFilePath, "");
+      settings.PostProcessorArguments = Win32.ReadIniValue("Options", "PostProcessorArguments", _iniFilePath, "");
+      settings.AssetsPath = Win32.ReadIniValue("Options", "AssetsPath", _iniFilePath, "");
+      settings.CssFileName = Win32.ReadIniValue("Options", "CssFileName", _iniFilePath, "style.css");
+      settings.CssDarkModeFileName = Win32.ReadIniValue("Options", "CssDarkModeFileName", _iniFilePath, "style-dark.css");
+      settings.ZoomLevel = Win32.GetPrivateProfileInt("Options", "ZoomLevel", 130, _iniFilePath);
+      settings.ShowToolbar = PluginUtils.ReadIniBool("Options", "ShowToolbar", _iniFilePath);
+      settings.ShowStatusbar = PluginUtils.ReadIniBool("Options", "ShowStatusbar", _iniFilePath);
       settings.IsDarkModeEnabled = IsDarkModeEnabled();
-      settings.AutoShowPanel = PluginUtils.ReadIniBool("Options", "AutoShowPanel", iniFilePath);
       return settings;
     }
 
     public void OnNotification(ScNotification notification)
     {
-      if (IsPanelVisible && notification.Header.Code == (uint)SciMsg.SCN_UPDATEUI) {
-        var scintillaGateway = scintillaGatewayFactory();
-        if (settings.SyncViewWithCaretPosition) {
-          var currentPos = scintillaGateway.GetCurrentLineNumber();
-          if (lastCaretPosition != currentPos) {
-            lastCaretPosition = currentPos;
-            ScrollToElementAtLineNo(lastCaretPosition);
-          }
-        }
-        else if (settings.SyncViewWithFirstVisibleLine) {
-          var currentPos = scintillaGateway.GetFirstVisibleLine();
+      try {
+        NotificationHandler(notification);
+      }
+      catch (Exception) {
+      }
+    }
 
-          if (currentFirstVisibleLine != currentPos) {
-            currentFirstVisibleLine = currentPos;
-            var docLine = scintillaGateway.DocLineFromVisible(currentPos);
-            ScrollToElementAtLineNo(docLine);
+    private void NotificationHandler(ScNotification notification) 
+    { 
+      if (_disposedValue) {
+        return;
+      }
+
+      switch (notification.Header.Code) {
+        case (uint) SciMsg.SCN_UPDATEUI: {
+          if (IsPanelVisible && _settings.SyncViewWithCaretPosition) {
+            var scintillaGateway = scintillaGatewayFactory();
+            var currentPos = scintillaGateway.GetCurrentLineNumber();
+            if (_lastCaretPosition != currentPos) {
+              _lastCaretPosition = currentPos;
+              if (_skipSyncEventsDue < DateTime.UtcNow) {
+                ScrollToElementAtLineNo(_lastCaretPosition);
+              }
+            }
           }
+          else if (IsPanelVisible && _settings.SyncViewWithFirstVisibleLine) {
+            var scintillaGateway = scintillaGatewayFactory();
+            var currentPos = scintillaGateway.GetFirstVisibleLine();
+
+            if (_currentFirstVisibleLine != currentPos) {
+              _currentFirstVisibleLine = currentPos;
+              if (_skipSyncEventsDue < DateTime.UtcNow) {
+                var docLine = scintillaGateway.DocLineFromVisible(currentPos);
+                ScrollToElementAtLineNo(docLine);
+              }
+            }
+          }
+          break;
         }
-      }
-      if (notification.Header.Code == (uint)NppMsg.NPPN_BUFFERACTIVATED) {
-        // Focus was switched to a new document
-        var currentFilePath = notepadPPGateway.GetCurrentFilePath();
-        AutoShowOrHidePanel(currentFilePath);
-        if (IsPanelVisible) {
-          RenderMarkdownDirect();
+        case (uint) NppMsg.NPPN_BUFFERACTIVATED: {
+          if (_skipSyncEventsDue < DateTime.UtcNow) {
+            RenderMarkdownDirect();
+          }
+          break;
         }
-      }
-      // NPPN_DARKMODECHANGED (NPPN_FIRST + 27) // To notify plugins that Dark Mode was enabled/disabled
-      if (notification.Header.Code == (uint)(NppMsg.NPPN_FIRST + 27)) {
-        settings.IsDarkModeEnabled = IsDarkModeEnabled();
-        if (IsPanelVisible) {
-          PreviewForm.UpdateSettings(settings);
-          RenderMarkdownDirect();
+        case (uint) (NppMsg.NPPN_FIRST + 27): {
+          // NPPN_DARKMODECHANGED (NPPN_FIRST + 27) // To notify plugins that Dark Mode was enabled/disabled
+
+          _settings.IsDarkModeEnabled = IsDarkModeEnabled();
+          if (IsPanelVisible) {
+            PreviewForm.UpdateSettings(_settings);
+            RenderMarkdownDirect();
+          }
+          break;
         }
-      }
-      if (IsPanelVisible && notification.Header.Code == (uint)SciMsg.SCN_MODIFIED) {
-        lastTickCount = Environment.TickCount;
-        RenderMarkdownDeferred();
-      }
-      if (notification.Header.Code == (uint)NppMsg.NPPN_READY) {
-        nppReady = true;
-        var currentFilePath = notepadPPGateway.GetCurrentFilePath();
-        AutoShowOrHidePanel(currentFilePath);
+        case (uint) SciMsg.SCN_MODIFIED: {
+          RenderMarkdownDeferred();
+          break;
+        }
       }
     }
 
     private void RenderMarkdownDeferred()
     {
-      // if we get a lot of key stroks within a short period, dont update preview
-      var currentDeltaMilliseconds = Environment.TickCount - lastTickCount;
-      if (currentDeltaMilliseconds < inputUpdateThresholdMiliseconds) {
-        // Reset Timer
-        renderTimer.Stop();
+      lock(_renderDeferredLock) {
+        if (_renderDeferredTask != null && !_renderDeferredTask.IsCompleted) {
+          var task = _renderDeferredTask;
+          var cts = _renderDeferredCancellationSource;
+          cts.Cancel();
+          task.ContinueWith(t => cts.Dispose());
+        }
+        _renderDeferredCancellationSource = new CancellationTokenSource();
+        _renderDeferredTask = RenderDeferredWorkerAsync(_renderDeferredCancellationSource.Token);
       }
-      renderTimer.Start();
-      lastTickCount = Environment.TickCount;
     }
 
-    private void OnRenderTimerElapsed(object source, EventArgs e)
+    private async Task RenderDeferredWorkerAsync(CancellationToken cancellationToken)
     {
-      renderTimer.Stop();
+      await Task.Delay(InputUpdateThreshold, cancellationToken);
       try {
         RenderMarkdownDirect();
       }
@@ -156,7 +170,7 @@ namespace AnotherMarkdown
     private void RenderMarkdownDirect()
     {
       if (IsPanelVisible) {
-        PreviewForm.RenderMarkdown(GetCurrentEditorText(), notepadPPGateway.GetCurrentFilePath());
+        PreviewForm.RenderMarkdown(GetCurrentEditorText(), _nppGateway.GetCurrentFilePath());
       }
     }
 
@@ -168,42 +182,40 @@ namespace AnotherMarkdown
 
     private void ScrollToElementAtLineNo(int lineNo)
     {
-      PreviewForm.ScrollToElementWithLineNo(lineNo);
+      if (IsPanelVisible) {
+        PreviewForm.ScrollToElementWithLineNo(lineNo);
+      }
     }
 
     public void InitCommandMenu()
     {
       PluginBase.SetCommand(0, "Toggle &Markdown Panel", TogglePanelVisible);
       PluginBase.SetCommand(1, "---", null);
-      PluginBase.SetCommand(2, "Synchronize with &caret position", SyncViewWithCaretChanged, settings.SyncViewWithCaretPosition);
-      PluginBase.SetCommand(3, "Synchronize with &first visible line in editor", SyncViewWithFirstVisibleLineChanged, settings.SyncViewWithFirstVisibleLine);
+      PluginBase.SetCommand(2, "Synchronize with &caret position", SyncViewWithCaretClicked, _settings.SyncViewWithCaretPosition);
+      PluginBase.SetCommand(3, "Synchronize with &first visible line in editor", SyncViewWithFirstVisibleLineClicked, _settings.SyncViewWithFirstVisibleLine);
       PluginBase.SetCommand(4, "---", null);
       PluginBase.SetCommand(5, "&Settings", EditSettings);
       PluginBase.SetCommand(6, "&Help", ShowHelp);
       PluginBase.SetCommand(7, "&About", ShowAboutDialog);
-      idMyDlg = 0;
+      _myDlgId = 0;
     }
 
     private void EditSettings()
     {
-      var settingsForm = new SettingsForm(settings);
+      var settingsForm = new SettingsForm(_settings);
       if (settingsForm.ShowDialog() == DialogResult.OK) {
-        settings.AssetsPath = settingsForm.AssetsPath;
-        settings.CssFileName = settingsForm.CssFileName;
-        settings.CssDarkModeFileName = settingsForm.CssDarkModeFileName;
-        settings.ZoomLevel = settingsForm.ZoomLevel;
-        settings.ShowToolbar = settingsForm.ShowToolbar;
-        settings.SupportedFileExt = settingsForm.SupportedFileExt;
-        settings.AllowAllExtensions = settingsForm.AllowAllExtensions;
-        settings.ShowStatusbar = settingsForm.ShowStatusbar;
-        settings.AutoShowPanel = settingsForm.AutoShowPanel;
-        settings.RenderingEngine = settingsForm.RenderingEngine;
+        _settings.AssetsPath = settingsForm.AssetsPath;
+        _settings.CssFileName = settingsForm.CssFileName;
+        _settings.CssDarkModeFileName = settingsForm.CssDarkModeFileName;
+        _settings.ZoomLevel = settingsForm.ZoomLevel;
+        _settings.ShowToolbar = settingsForm.ShowToolbar;
+        _settings.ShowStatusbar = settingsForm.ShowStatusbar;
 
-        settings.IsDarkModeEnabled = IsDarkModeEnabled();
+        _settings.IsDarkModeEnabled = IsDarkModeEnabled();
         SaveSettings();
         //Update Preview
         if (IsPanelVisible) {
-          PreviewForm.UpdateSettings(settings);
+          PreviewForm.UpdateSettings(_settings);
           RenderMarkdownDirect();
         }
       }
@@ -212,11 +224,16 @@ namespace AnotherMarkdown
     private void DocumentChanged(DocumentContentChanged args)
     {
       var scintillaGateway = scintillaGatewayFactory();
-      int pos = scintillaGateway.GetCurrentPos();
-      scintillaGateway.SetText(args.Content);
+      var firstVisible = scintillaGateway.GetFirstVisibleLine();
 
+      int pos = scintillaGateway.GetCurrentPos();
+      _skipSyncEventsDue = DateTime.UtcNow.AddSeconds(1);
+
+      scintillaGateway.SetText(args.Content);
       scintillaGateway.GotoPos(pos);
-      scintillaGateway.ScrollCaret();
+      if (firstVisible != 0) {
+        scintillaGateway.LineScroll(0, firstVisible);
+      }
     }
 
     private void ShowHelp()
@@ -235,46 +252,57 @@ namespace AnotherMarkdown
     {
       StringBuilder sbIniFilePath = new StringBuilder(Win32.MAX_PATH);
       Win32.SendMessage(PluginBase.nppData._nppHandle, (uint)NppMsg.NPPM_GETPLUGINSCONFIGDIR, Win32.MAX_PATH, sbIniFilePath);
-      iniFilePath = sbIniFilePath.ToString();
-      if (!Directory.Exists(iniFilePath)) {
-        Directory.CreateDirectory(iniFilePath);
+      _iniFilePath = sbIniFilePath.ToString();
+      if (!Directory.Exists(_iniFilePath)) {
+        Directory.CreateDirectory(_iniFilePath);
       }
 
-      iniFilePath = Path.Combine(iniFilePath, Main.ModuleName + ".ini");
+      _iniFilePath = Path.Combine(_iniFilePath, Main.ModuleName + ".ini");
     }
 
-    private void SyncViewWithCaretChanged()
+    private bool SyncViewEnabled => (_settings.SyncViewWithCaretPosition || _settings.SyncViewWithFirstVisibleLine);
+
+    private void SyncViewWithCaretClicked()
     {
-      var value = !settings.SyncViewWithCaretPosition;
-      settings.SyncViewWithCaretPosition = value;
-      if (value && settings.SyncViewWithFirstVisibleLine) {
-        // Disable syncWithFirstVisibleLine
-        SyncViewWithFirstVisibleLineChanged();
-      }
+      var wasSyncView = SyncViewEnabled;
+      SetSyncViewWithCaretPosition(!_settings.SyncViewWithCaretPosition);
+      if (SyncViewEnabled != wasSyncView) {
+        RenderMarkdownDeferred();
+      }      
+    }
 
-      Win32.CheckMenuItem(Win32.GetMenu(PluginBase.nppData._nppHandle), PluginBase._funcItems.Items[2]._cmdID,
-        Win32.MF_BYCOMMAND | (value ? Win32.MF_CHECKED : Win32.MF_UNCHECKED));
-      var scintillaGateway = scintillaGatewayFactory();
-
-      if (value) {
-        ScrollToElementAtLineNo(scintillaGateway.GetCurrentLineNumber());
+    private void SyncViewWithFirstVisibleLineClicked()
+    {
+      var wasSyncView = SyncViewEnabled;
+      SetSyncViewWithFirstVisibleLine(!_settings.SyncViewWithFirstVisibleLine);
+      if (SyncViewEnabled != wasSyncView) {
+        RenderMarkdownDeferred();
       }
     }
 
-    private void SyncViewWithFirstVisibleLineChanged()
+    private void SetSyncViewWithCaretPosition(bool enabled)
     {
-      var value = !settings.SyncViewWithFirstVisibleLine;
-      settings.SyncViewWithFirstVisibleLine = value;
-      if (value && settings.SyncViewWithCaretPosition) {
-        // Disable syncViewWithCaretPosition
-        SyncViewWithCaretChanged();
+      if (_settings.SyncViewWithCaretPosition == enabled) {
+        return;
+      }
+      _settings.SyncViewWithCaretPosition = enabled;
+      if (enabled) {
+        SetSyncViewWithFirstVisibleLine(false);
       }
 
-      Win32.CheckMenuItem(Win32.GetMenu(PluginBase.nppData._nppHandle), PluginBase._funcItems.Items[3]._cmdID, Win32.MF_BYCOMMAND | (value ? Win32.MF_CHECKED : Win32.MF_UNCHECKED));
-      var scintillaGateway = scintillaGatewayFactory();
-      if (value) {
-        ScrollToElementAtLineNo(scintillaGateway.GetFirstVisibleLine());
+      Win32.CheckMenuItem(Win32.GetMenu(PluginBase.nppData._nppHandle), PluginBase._funcItems.Items[2]._cmdID, Win32.MF_BYCOMMAND | (enabled ? Win32.MF_CHECKED : Win32.MF_UNCHECKED));
+    }
+
+    private void SetSyncViewWithFirstVisibleLine(bool enabled)
+    {
+      if (_settings.SyncViewWithFirstVisibleLine == enabled) {
+        return;
       }
+      _settings.SyncViewWithFirstVisibleLine = enabled;
+      if (enabled) {
+        SetSyncViewWithCaretPosition(false);
+      }
+      Win32.CheckMenuItem(Win32.GetMenu(PluginBase.nppData._nppHandle), PluginBase._funcItems.Items[3]._cmdID, Win32.MF_BYCOMMAND | (enabled ? Win32.MF_CHECKED : Win32.MF_UNCHECKED));
     }
 
     public void SetToolBarIcon()
@@ -284,7 +312,7 @@ namespace AnotherMarkdown
       tbIconsOld.hToolbarIcon = Resources.markdown_16x16_solid_dark.GetHicon();
       IntPtr pTbIcons = Marshal.AllocHGlobal(Marshal.SizeOf(tbIconsOld));
       Marshal.StructureToPtr(tbIconsOld, pTbIcons, false);
-      Win32.SendMessage(PluginBase.nppData._nppHandle, (uint)NppMsg.NPPM_ADDTOOLBARICON, PluginBase._funcItems.Items[idMyDlg]._cmdID, pTbIcons);
+      Win32.SendMessage(PluginBase.nppData._nppHandle, (uint)NppMsg.NPPM_ADDTOOLBARICON, PluginBase._funcItems.Items[_myDlgId]._cmdID, pTbIcons);
       Marshal.FreeHGlobal(pTbIcons);
     }
 
@@ -295,19 +323,15 @@ namespace AnotherMarkdown
 
     private void SaveSettings()
     {
-      Win32.WritePrivateProfileString("Options", "SyncViewWithCaretPosition", settings.SyncViewWithCaretPosition ? "1" : "0", iniFilePath);
-      Win32.WritePrivateProfileString("Options", "SyncWithFirstVisibleLine", settings.SyncViewWithFirstVisibleLine ? "1" : "0", iniFilePath);
+      Win32.WritePrivateProfileString("Options", "SyncViewWithCaretPosition", _settings.SyncViewWithCaretPosition ? "1" : "0", _iniFilePath);
+      Win32.WritePrivateProfileString("Options", "SyncWithFirstVisibleLine", _settings.SyncViewWithFirstVisibleLine ? "1" : "0", _iniFilePath);
 
-      Win32.WriteIniValue("Options", "AssetsPath", settings.AssetsPath, iniFilePath);
-      Win32.WriteIniValue("Options", "CssFileName", settings.CssFileName, iniFilePath);
-      Win32.WriteIniValue("Options", "CssDarkModeFileName", settings.CssDarkModeFileName, iniFilePath);
-      Win32.WriteIniValue("Options", "ZoomLevel", settings.ZoomLevel.ToString(), iniFilePath);
-      Win32.WriteIniValue("Options", "ShowToolbar", settings.ShowToolbar.ToString(), iniFilePath);
-      Win32.WriteIniValue("Options", "ShowStatusbar", settings.ShowStatusbar.ToString(), iniFilePath);
-      Win32.WriteIniValue("Options", "SupportedFileExt", settings.SupportedFileExt, iniFilePath);
-      Win32.WriteIniValue("Options", "AutoShowPanel", settings.AutoShowPanel.ToString(), iniFilePath);
-      Win32.WriteIniValue("Options", "AllowAllExtensions", settings.AllowAllExtensions.ToString(), iniFilePath);
-      Win32.WriteIniValue("Options", "RenderingEngine", settings.RenderingEngine, iniFilePath);
+      Win32.WriteIniValue("Options", "AssetsPath", _settings.AssetsPath, _iniFilePath);
+      Win32.WriteIniValue("Options", "CssFileName", _settings.CssFileName, _iniFilePath);
+      Win32.WriteIniValue("Options", "CssDarkModeFileName", _settings.CssDarkModeFileName, _iniFilePath);
+      Win32.WriteIniValue("Options", "ZoomLevel", _settings.ZoomLevel.ToString(), _iniFilePath);
+      Win32.WriteIniValue("Options", "ShowToolbar", _settings.ShowToolbar.ToString(), _iniFilePath);
+      Win32.WriteIniValue("Options", "ShowStatusbar", _settings.ShowStatusbar.ToString(), _iniFilePath);
     }
 
     private void ShowAboutDialog()
@@ -322,7 +346,7 @@ namespace AnotherMarkdown
         var tbData = new NppTbData();
         tbData.hClient = PreviewForm.Handle;
         tbData.pszName = Main.PluginTitle;
-        tbData.dlgID = idMyDlg;
+        tbData.dlgID = _myDlgId;
         tbData.uMask = NppTbMsg.DWS_DF_CONT_RIGHT | NppTbMsg.DWS_ICONTAB | NppTbMsg.DWS_ICONBAR;
         tbData.hIconTab = (uint) ConvertBitmapToIcon(Resources.markdown_16x16_solid_bmp).Handle;
         tbData.pszModuleName = $"{Main.ModuleName}.dll";
@@ -341,7 +365,7 @@ namespace AnotherMarkdown
       }
 
       if (IsPanelVisible) {
-        PreviewForm.UpdateSettings(settings);
+        PreviewForm.UpdateSettings(_settings);
         RenderMarkdownDirect();
       }
     }
@@ -377,23 +401,16 @@ namespace AnotherMarkdown
     private bool IsDarkModeEnabled()
     {
       // NPPM_ISDARKMODEENABLED (NPPMSG + 107)
-      IntPtr ret = Win32.SendMessage(PluginBase.nppData._nppHandle, (uint)(Constants.NPPMSG + 107), Unused, Unused);
+      IntPtr ret = Win32.SendMessage(PluginBase.nppData._nppHandle, (uint)(Constants.NPPMSG + 107), UNUSED, UNUSED);
       return ret.ToInt32() == 1;
-    }
-
-    private void AutoShowOrHidePanel(string currentFilePath)
-    {
-      if (nppReady && settings.AutoShowPanel) {
-        // automatically show panel for supported file types
-        if ((!IsPanelVisible && PreviewForm.IsValidFileExtension(currentFilePath))
-          || (IsPanelVisible && !PreviewForm.IsValidFileExtension(currentFilePath))) {
-          TogglePanelVisible();
-        }
-      }
     }
 
     protected void HandleWndProc(ref Message m)
     {
+      if (_disposedValue) {
+        return;
+      }
+
       switch (m.Msg) {
         case (int)WindowsMessage.WM_NOTIFY:
           var notify = (NMHDR)Marshal.PtrToStructure(m.LParam, typeof(NMHDR));
@@ -447,7 +464,18 @@ namespace AnotherMarkdown
     protected virtual void Dispose(bool disposing)
     {
       if (!_disposedValue) {
+        _disposedValue = true;
         if (disposing) {
+          if (_renderDeferredCancellationSource != null) {
+            _renderDeferredCancellationSource.Cancel();
+            if (_renderDeferredTask != null) {
+              _renderDeferredTask.Wait();
+              _renderDeferredTask = null;
+            }
+            _renderDeferredCancellationSource.Dispose();
+            _renderDeferredCancellationSource = null;
+          }
+
           _icon?.Dispose();
           _iconBmp?.Dispose();
           _icon = null;
@@ -461,7 +489,7 @@ namespace AnotherMarkdown
           _previewForm?.Dispose();
           _previewForm = null;
         }
-        _disposedValue = true;
+        
       }
     }
 
@@ -486,28 +514,30 @@ namespace AnotherMarkdown
       WM_NOTIFY = 0x004E
     }
 
-    private const int Unused = 0;
-    private const int renderRefreshRateMilliSeconds = 250;
-    private const int inputUpdateThresholdMiliseconds = 200;
+    private bool IsPanelVisible { get; set; }
+
+    private const int UNUSED = 0;
+    private static readonly TimeSpan InputUpdateThreshold = TimeSpan.FromMilliseconds(400);
+
+    private object _renderDeferredLock = new object();
+    private Task _renderDeferredTask;
+    private CancellationTokenSource _renderDeferredCancellationSource;
 
     private MarkdownPreviewForm _previewForm;
     private object _lock = new object();
-    private Timer renderTimer;
-    private int idMyDlg = -1;
-    private int lastTickCount = 0;
-    private bool IsPanelVisible { get; set; }
+    private int _myDlgId = -1;
 
     private readonly Func<IScintillaGateway> scintillaGatewayFactory;
-    private readonly INotepadPPGateway notepadPPGateway;
-    private string iniFilePath;
-    private int lastCaretPosition;
-    private int currentFirstVisibleLine;
-    private bool nppReady;
-    private Settings settings;
+    private readonly INotepadPPGateway _nppGateway;
+    private string _iniFilePath;
+    private int _lastCaretPosition;
+    private int _currentFirstVisibleLine;
+    private Settings _settings;
 
     private IntPtr? _ptrNppTbData;
     private Icon _icon;
     private Bitmap _iconBmp;
     private bool _disposedValue;
+    private DateTime _skipSyncEventsDue = DateTime.MinValue;
   }
 }

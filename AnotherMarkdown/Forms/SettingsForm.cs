@@ -13,11 +13,7 @@ namespace AnotherMarkdown.Forms
     public string CssFileName { get; set; }
     public string CssDarkModeFileName { get; set; }
     public bool ShowToolbar { get; set; }
-    public string SupportedFileExt { get; set; }
-    public bool AllowAllExtensions { get; set; }
-    public bool AutoShowPanel { get; set; }
     public bool ShowStatusbar { get; set; }
-    public string RenderingEngine { get; set; }
 
     public SettingsForm(Settings settings)
     {
@@ -26,11 +22,7 @@ namespace AnotherMarkdown.Forms
       CssFileName = settings.CssFileName;
       CssDarkModeFileName = settings.CssDarkModeFileName;
       ShowToolbar = settings.ShowToolbar;
-      SupportedFileExt = settings.SupportedFileExt;
-      AutoShowPanel = settings.AutoShowPanel;
       ShowStatusbar = settings.ShowStatusbar;
-      RenderingEngine = settings.RenderingEngine;
-      AllowAllExtensions = settings.AllowAllExtensions;
 
       if (string.IsNullOrEmpty(CssFileName)) {
         CssFileName = Settings.DefaultCssFile;
@@ -47,10 +39,7 @@ namespace AnotherMarkdown.Forms
       tbCssFile.Text = CssFileName;
       tbDarkmodeCssFile.Text = CssDarkModeFileName;
       cbShowToolbar.Checked = ShowToolbar;
-      tbFileExt.Text = SupportedFileExt;
-      cbAutoShowPanel.Checked = AutoShowPanel;
       cbShowStatusbar.Checked = ShowStatusbar;
-      cbAllowAllExtensions.Checked = AllowAllExtensions;
     }
 
     private void trackBar1_ValueChanged(object sender, EventArgs e)
@@ -116,37 +105,9 @@ namespace AnotherMarkdown.Forms
     }
         #endregion
 
-    private void btnDefaultFileExt_Click(object sender, EventArgs e)
-    {
-      tbFileExt.Text = Settings.DEFAULT_SUPPORTED_FILE_EXT;
-    }
-
-    private void tbFileExt_TextChanged(object sender, EventArgs e)
-    {
-      SupportedFileExt = tbFileExt.Text;
-    }
-
-    private void cbAutoShowPanel_CheckedChanged(object sender, EventArgs e)
-    {
-      AutoShowPanel = cbAutoShowPanel.Checked;
-    }
-
     private void cbShowStatusbar_CheckedChanged(object sender, EventArgs e)
     {
       ShowStatusbar = cbShowStatusbar.Checked;
-    }
-
-    private void comboRenderingEngine_SelectedIndexChanged(object sender, EventArgs e) { }
-
-    private void cbAllowAllExtensions_CheckedChanged(object sender, EventArgs e)
-    {
-      AllowAllExtensions = cbAllowAllExtensions.Checked;
-      if (AllowAllExtensions) {
-        tbFileExt.Enabled = false;
-      }
-      else {
-        tbFileExt.Enabled = true;
-      }
     }
 
     private void btnDefaultAssetDir_Click(object sender, EventArgs e)

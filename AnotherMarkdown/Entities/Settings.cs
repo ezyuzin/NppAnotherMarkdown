@@ -11,17 +11,13 @@ namespace AnotherMarkdown.Entities
     public string CssFileName { get; set; }
     public string CssDarkModeFileName { get; set; }
     public int ZoomLevel { get; set; }
-    public string SupportedFileExt { get; set; }
-    public bool AllowAllExtensions { get; set; }
     public bool IsDarkModeEnabled { get; set; }
     public bool ShowToolbar { get; set; }
     public bool ShowStatusbar { get; set; }
-    public bool AutoShowPanel { get; set; }
     public string PreProcessorCommandFilename { get; set; }
     public string PreProcessorArguments { get; set; }
     public string PostProcessorCommandFilename { get; set; }
     public string PostProcessorArguments { get; set; }
-    public string RenderingEngine { get; set; }
 
     public static string DefaultCssFile => DefaultAssetPath + "/markdown/markdown.css";
     public static string DefaultDarkModeCssFile => DefaultAssetPath + "/markdown/markdown-dark.css";
