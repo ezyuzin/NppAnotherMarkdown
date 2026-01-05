@@ -12,10 +12,11 @@ body {
   width: calc(100% - 50px);
   margin: 5 auto 0 auto;
   height: min-content;
+  margin-bottom: 30px;
 }
 
 body, table {
-  font-family: "JetBrains Mono NL", "Droid Sans Mono", 'Arial Nova','Helvetica Neue',Helvetica,'Segoe UI',Arial,sans-serif,'Segoe UI Emoji','Noto Emoji';
+  font-family: 'JetBrains Mono NL', 'Droid Sans Mono', 'Courier New', 'Arial Nova','Helvetica Neue',Helvetica,'Segoe UI',Arial,sans-serif,'Segoe UI Emoji','Noto Emoji';
   font-size: 9pt;
   line-height: 1.5;  
 }
@@ -600,6 +601,16 @@ pre code, pre tt {
 .task-list-item {
   display: flex;
   list-style-type: none;
+  align-items: flex-start;
+}
+
+input.task-list-item-checkbox {
+  display: inline-block;
+  margin-top: 2px;
+}
+
+input.task-list-item-checkbox:disabled {
+  color: black;
 }
 
 p.end {
