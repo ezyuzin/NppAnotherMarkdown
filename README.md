@@ -88,7 +88,7 @@ This is similar to the _Synchronize Vertical Scrolling_ option of Notepad++ for 
 When this option is enabled, the plugin ensures that the first visible line in the 
 editor is also visible in the preview. (This is an alternative to _Synchronize viewer with caret position_)
 
-## Used libs and resources
+### Used libs and resources
 
 | Name                              | Version     | Authors       | Link                                                                                                                   |
 |-----------------------------------|-------------|---------------|------------------------------------------------------------------------------------------------------------------------|

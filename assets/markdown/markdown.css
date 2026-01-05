@@ -17,11 +17,11 @@ body {
   height: min-content;
 }
 
-body &gt; *:first-child {
+body > *:first-child {
   margin-top: 0 !important;
 }
 
-body &gt; *:last-child {
+body > *:last-child {
   margin-bottom: 0 !important;
 }
 
@@ -48,7 +48,7 @@ a.anchor {
 h1, h2, h3, h4, h5, h6 {
   margin: 0;
   padding: 0;
-  margin-bottom: 15px;  
+  margin-bottom: 15px;
   color: black;
   font-weight: bold;
   -webkit-font-smoothing: antialiased;
@@ -80,7 +80,7 @@ h3 {
   margin-top: 15px;
   padding-bottom: 6px;
   margin-bottom: 11px !important;
-  border-bottom: 1px solid #cccccc;    
+  border-bottom: 1px solid #cccccc;
 }
 
 h4 {
@@ -89,7 +89,7 @@ h4 {
   padding-bottom: 4px;
   margin-top: 15px;
   margin-bottom: 9px !important;
-  border-bottom: 1px solid #cccccc;   
+  border-bottom: 1px solid #cccccc;
 }
 
 h5 {
@@ -149,7 +149,7 @@ p, blockquote, ul, ol, dl, li, table, pre {
 
 ul, li {
   margin-top: 0px;
-  margin-bottom: 0px;  
+  margin-bottom: 0px;
 }
 
 
@@ -177,8 +177,8 @@ body > h1:first-child + h2 {
 }
 
 body > h3:first-child,
-body > h4:first-child, 
-body > h5:first-child, 
+body > h4:first-child,
+body > h5:first-child,
 body > h6:first-child {
   margin-top: 0;
   padding-top: 0;
@@ -205,7 +205,7 @@ ul, ol {
   padding-left: 15px;
 }
 
-ul :first-child, 
+ul :first-child,
 ol :first-child {
   margin-top: 0;
 }
@@ -214,7 +214,7 @@ ul :last-child, ol :last-child {
   margin-bottom: 5px;
 }
 li {
-  text-align: justify  
+  text-align: justify
 }
 
 dl {
@@ -233,11 +233,11 @@ dl dt:first-child {
   padding: 0;
 }
 
-dl dt &gt; :first-child {
+dl dt > :first-child {
   margin-top: 0;
 }
 
-dl dt &gt; :last-child {
+dl dt > :last-child {
   margin-bottom: 0;
 }
 
@@ -246,11 +246,11 @@ dl dd {
   padding: 0 15px;
 }
 
-dl dd &gt; :first-child {
+dl dd > :first-child {
   margin-top: 0;
 }
 
-dl dd &gt; :last-child {
+dl dd > :last-child {
   margin-bottom: 0;
 }
 
@@ -260,16 +260,16 @@ blockquote {
   color: #777777;
 }
 
-blockquote &gt; :first-child {
+blockquote > :first-child {
   margin-top: 0;
 }
 
-blockquote &gt; :last-child {
+blockquote > :last-child {
   margin-bottom: 0;
 }
 
 table {
-  padding: 0;  
+  padding: 0;
   border-collapse: collapse;
 }
 table tr {
@@ -319,7 +319,7 @@ span.frame {
   overflow: hidden;
 }
 
-span.frame &gt; span {
+span.frame > span {
   border: 1px solid #dddddd;
   display: block;
   float: left;
@@ -347,7 +347,7 @@ span.align-center {
   clear: both;
 }
 
-span.align-center &gt; span {
+span.align-center > span {
   display: block;
   overflow: hidden;
   margin: 13px auto 0;
@@ -365,7 +365,7 @@ span.align-right {
   clear: both;
 }
 
-span.align-right &gt; span {
+span.align-right > span {
   display: block;
   overflow: hidden;
   margin: 13px 0 0;
@@ -395,7 +395,7 @@ span.float-right {
   float: right;
 }
 
-span.float-right &gt; span {
+span.float-right > span {
   display: block;
   overflow: hidden;
   margin: 13px auto 0;
@@ -591,11 +591,12 @@ pre code, pre tt {
 }
 
 .contains-task-list {
-  padding-left: 5px;  
+  padding-left: 5px;
 }
 
 .task-list-item {
-  list-style-type: none;  
+  display: flex;
+  list-style-type: none;
 }
 
 p.end {
@@ -605,5 +606,5 @@ p.end {
 
 .linemark {
   vertical-align: top;
-  display: inline-block;  
+  display: inline-block;
 }

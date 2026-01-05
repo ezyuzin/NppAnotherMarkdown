@@ -2,8 +2,8 @@
 
 ### Version 0.1.3 (released 2026-01-06)
 * Editable tasklists, (bi-direction sync)
-- [ ] task1
-- [ ] task2
+- [x] task1
+- [x] task2
 
 ![](example/tasklist.gif)
 
