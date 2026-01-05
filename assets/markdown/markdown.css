@@ -6,15 +6,18 @@
 }
 
 body {
-  font-family: "JetBrains Mono NL", "Droid Sans Mono", 'Arial Nova','Helvetica Neue',Helvetica,'Segoe UI',Arial,sans-serif,'Segoe UI Emoji','Noto Emoji';
-  font-size: 9pt;
-  line-height: 1.5;
   background-color: white;
   color: #333;
   max-width: 800px;
   width: calc(100% - 50px);
   margin: 5 auto 0 auto;
   height: min-content;
+}
+
+body, table {
+  font-family: "JetBrains Mono NL", "Droid Sans Mono", 'Arial Nova','Helvetica Neue',Helvetica,'Segoe UI',Arial,sans-serif,'Segoe UI Emoji','Noto Emoji';
+  font-size: 9pt;
+  line-height: 1.5;  
 }
 
 body > *:first-child {

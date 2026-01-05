@@ -1,19 +1,21 @@
 ## Version History
 
 ### Version 0.1.3 (released 2026-01-06)
+
 * Editable tasklists, (bi-direction sync)
-- [x] task1
-- [x] task2
+
+Fixes:
+- [x] fix: reduce flickering panorama during text editing
+- [x] fix: another attempt to make more accurate positioning in the viewer when changing the caret position or the first line
 
 ![](example/tasklist.gif)
 
-* fix: reduce flickering panorama during text editing
-* fix: another attempt to make more accurate positioning in the viewer when changing the caret position or the first line
-
 ### Version 0.1.2 (released 2026-01-03)
+
 * fix: minor, but possible memory leaks
 
 ### Version 0.1.1 (released 2025-12-30)
+
 * added scene editor for 360 panoramic photos. + 360 pano scene example
 * fix: some memory leaks
 * fix: scrolling
