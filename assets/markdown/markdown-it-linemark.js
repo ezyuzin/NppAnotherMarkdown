@@ -18,10 +18,14 @@ module.exports = function(md, options) {
     const token = tokens[i];
 
     if (token.children) {
-      for(let i1=0; i1 < token.children.length; i1++) {
+      const children = token.children.filter(li => li.type === 'text');
+      children.push(...token.children.filter(li => li.type !== 'text'))
+
+      for(let i1=0; i1 < children.length; i1++) {
+        const child = children[i1];
         const entry = {
           tokens: token.children,
-          index: i1,
+          index: token.children.indexOf(child),
           context
         };
         handleToken(entry);
@@ -37,9 +41,8 @@ module.exports = function(md, options) {
 
       let b = context.line;
       let match = (a == b) ? true : false;
-
       if (!match) {
-        match = b.includes(a);
+        match = b.startsWith(a);
       }
       if (!match) {
         let len = Math.min(a.length, b.length);
@@ -49,7 +52,8 @@ module.exports = function(md, options) {
       }
       if (!match) {
         a = token.content.trim();
-        b = context.line.replace(/^(\*+|\=+|#+|\-+)/, '').trim();
+        b = context.line;
+        b = b.replace(/^(\*+|\=+|#+|\-+|\|\s)/, '').trim();
         len = Math.min(a.length, b.length);
         a = (a.length > len) ? a.slice(0, len) : a;
         b = (b.length > len) ? b.slice(0, len) : b;
@@ -63,13 +67,13 @@ module.exports = function(md, options) {
       }
       return false;
     }
-    if (token.nesting == -1) {
+    if (token.nesting === 1 || token.nesting === -1) {
       return false
     }
     if (token.map) {
       const map = token.map;
       const nline = map[0];
-      const state = insertLineMarker(data, i, nline, context);
+      const state = insertLineMarker(data, i, nline, context, 'token.map');
       if (context.nline < nline) {
         context.nline = nline;
         moveToNextLine(context);
@@ -87,7 +91,8 @@ module.exports = function(md, options) {
     const TokenConstructor = context.tokenConstructor;
 
     let anchor = new TokenConstructor('html_inline', '', 0);
-    anchor.content = `<div id='LINE${nline}'></div>`;
+    const marker = ''; //`{L${nline}}`
+    anchor.content = `<span id='LINE${nline}' class="linemark">${marker}</span>`;
     data.tokens = insertAt(data.tokens, i, anchor);
     return true;
   }
@@ -97,6 +102,9 @@ module.exports = function(md, options) {
 
     for(let n = nline + 1; n < lines.length; n++) {
       const line = lines[n].trim();
+      if (/^[=\*\-\|]+$/.test(line)) {
+        continue;
+      }
       if (line.length !== 0) {
         context.nline = n;
         context.line = line;
@@ -128,7 +136,6 @@ module.exports = function(md, options) {
       handleToken(entry);
       state.tokens = entry.tokens;
 		}
-    console.log( { state });
 	});
 };
 

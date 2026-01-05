@@ -12,6 +12,7 @@ using System.Web;
 using System.Windows.Forms;
 using Microsoft.Web.WebView2.Core;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using PanelCommon;
 
 namespace Webview2Viewer
@@ -36,9 +37,6 @@ namespace Webview2Viewer
     public async Task InitializeAsync(int zoomLevel)
     {
       var cacheDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), CONFIG_FOLDER_NAME, "webview2");
-      //var props = new Microsoft.Web.WebView2.WinForms.CoreWebView2CreationProperties();
-      //props.UserDataFolder = cacheDir;
-      //props.AdditionalBrowserArguments = "--disable-web-security --allow-file-access-from-files --allow-file-access";
       _webView = new Microsoft.Web.WebView2.WinForms.WebView2();
       var opt = new CoreWebView2EnvironmentOptions();
       _environment = await CoreWebView2Environment.CreateAsync(null, cacheDir, opt);
@@ -54,7 +52,6 @@ namespace Webview2Viewer
       _webView.TabIndex = 0;
       _webView.NavigationStarting += OnWebBrowser_NavigationStarting;
       _webView.ZoomFactor = ConvertToZoomFactor(zoomLevel);
-
       _webViewInitialized = true;
     }
 
@@ -75,26 +72,9 @@ namespace Webview2Viewer
       if (lineNo <= 0) {
         lineNo = 0;
       }
-
-      if (_webViewInitialized && _webView != null) {
-
-        if (scrollTo.HasValue) {
-          scrollTo = lineNo;
-          return;
-        }
-        scrollTo = lineNo;
-        var context = TaskScheduler.FromCurrentSynchronizationContext();
-        var scrollTask = new Task(async () => {
-          await Task.Delay(50);
-          var value = scrollTo.Value;
-          scrollTo = null;
-          ExecuteWebviewAction(async () => {
-            var script = _scrollScript.Replace("__LINE__", $"{value}");
-            await _webView.ExecuteScriptAsync(script);
-          });
-        });
-        scrollTask.Start(context);
-      }
+      ExecuteWebviewAction(async () => {
+        await _webView.ExecuteScriptAsync($"window.scrollToLine({lineNo})");
+      });
     }
 
     private string UrlPathEncode(string path)
@@ -394,56 +374,6 @@ namespace Webview2Viewer
     }
 
     const string CONFIG_FOLDER_NAME = "AnotherMarkdown";
-    const string _scrollScript = @"
-(function() {
-  let line = __LINE__;
-  if (line === 0) {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
-    return;
-  }
-
-  let index = 0;
-  let element = null;
-  while(true) {
-    element = document.getElementById(`LINE${line++}`);
-    if (element) {
-      break;
-    }
-    if (++index === 10) {
-      return;
-    }
-  }
-
-
-  var spacer = document.getElementById('spacer');
-  if (spacer) {
-    spacer.parentElement.removeChild(spacer);
-  }
-  var rect = element.getBoundingClientRect();
-  var elementTop = rect.top + window.pageYOffset;
-
-  var requiredScrollTop = elementTop;
-  var maxScrollTop = document.documentElement.scrollHeight - window.innerHeight;
-  if (requiredScrollTop > maxScrollTop) {
-    var extraHeight = requiredScrollTop - maxScrollTop;
-    var spacer = document.createElement('div');
-    spacer.id = 'spacer';
-    spacer.style.height = extraHeight + 'px';
-    spacer.style.width = '1px';
-    spacer.style.pointerEvents = 'none';
-
-    document.body.appendChild(spacer);
-  }
-
-  window.scrollTo({
-    top: requiredScrollTop,
-    behavior: 'smooth'
-  });
-})();
-";
 
     private Microsoft.Web.WebView2.WinForms.WebView2 _webView;
     private bool _webViewInitialized = false;
@@ -453,7 +383,6 @@ namespace Webview2Viewer
     private string _assetPath;
     private string _documentPath;
     private string _documentUri;
-    private int? scrollTo;
 
     private bool _syncView;
     private CoreWebView2Environment _environment = null;

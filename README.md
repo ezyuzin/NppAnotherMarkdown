@@ -7,12 +7,10 @@ A plugin for previewing Markdown files in Notepad++.
 
 The plugin is a fork of the [NppMarkdownPanel plugin](https://github.com/mohzy83/NppMarkdownPanel) and uses the [markdown-it](https://github.com/markdown-it/markdown-it) javascript library to render Markdown documents into HTML and allows configuring used Markdown extensions **without recompiling or reinstalling the plugin** (just edit `assets/markdown/markdown.js`).
 
-Also,
-
-* Added support for editing and view interactive 360-degree panoramic photos into Markdown. Extension uses [panellum](https://github.com/mpetroff/pannellum) library and invokes with markdown markup syntax `{% pano360 path_to_scene %}`. Example can be found [here](https://github.com/ezyuzin/NppAnotherMarkdown/tree/master/example/pano).  
+* Editing and preview interactive 360-degree panoramic photos into Markdown. Extension uses [panellum](https://github.com/mpetroff/pannellum) library and invokes with markdown markup syntax `{% pano360 path_to_scene %}`. Example can be found [here](https://github.com/ezyuzin/NppAnotherMarkdown/tree/master/example/pano).  
   Open index.pano360.json in Notepad++ for editing, the AnotherMarkdown preview makes scene editing easier.
   
-* Added a plugin for displaying QR codes
+* Displaying QR codes
 `{% qrcode text="12345" %}`
 
 ![](example/pano/preview.gif)
@@ -90,21 +88,7 @@ This is similar to the _Synchronize Vertical Scrolling_ option of Notepad++ for 
 When this option is enabled, the plugin ensures that the first visible line in the 
 editor is also visible in the preview. (This is an alternative to _Synchronize viewer with caret position_)
 
-## Version History
-### Version 0.1.0 (released 2025-12-26)
-
-* Removed support for IE11
-* Removed support for the MarkdownDig library
-* Markdown rendering using the [markdown-it](https://github.com/markdown-it/markdown-it) library
-* Added a plugin for displaying panoramic photos; the plugin is not part of the Markdown standard
-  `{% pano360 %}`
-* Added a plugin for displaying QR codes; the plugin is not part of the Markdown standard
-  `{% qrcode text="12345" %}`
-* Fixes for more accurate positioning in the viewer when changing the caret position or the first line
-
-
-
-### Used libs and resources
+## Used libs and resources
 
 | Name                              | Version     | Authors       | Link                                                                                                                   |
 |-----------------------------------|-------------|---------------|------------------------------------------------------------------------------------------------------------------------|

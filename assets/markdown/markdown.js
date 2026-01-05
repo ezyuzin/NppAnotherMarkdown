@@ -22,13 +22,13 @@ window.viewPlugin = (() => {
     lineMark: false
   };
 
-  async function importMarkdown(container, url, options) {
+  async function setDocument(container, url, options) {
     options = {
       lineMark: false,
       modified: false,
       ...(options || {})
     }
-
+    document.title = decodeURI(url.match(/\/([^\/]+)$/)[1]);
     await Promise.all(markdownScripts);
 
     const response = await fetch(url);
@@ -307,5 +307,58 @@ window.viewPlugin = (() => {
       }
     }
   }
-  return importMarkdown;
+  function scrollToLine(line) {
+    if (line === 0) {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+      return;
+    }
+
+    let index = 0;
+    let element = null;
+    while(true) {
+      element = document.getElementById(`LINE${line++}`);
+      if (element) {
+        break;
+      }
+      if (++index === 10) {
+        return;
+      }
+    }
+
+    var spacer = document.getElementById('spacer');
+    var rect = element.getBoundingClientRect();
+
+    var elementTop = rect.top + window.pageYOffset;
+    var requiredScrollTop = elementTop;
+    var maxScrollTop = document.documentElement.scrollHeight - window.innerHeight;
+    if (requiredScrollTop > maxScrollTop) {
+      var extraHeight = requiredScrollTop - maxScrollTop;
+      if (!spacer) {
+        spacer = document.createElement('div');
+        spacer.id = 'spacer';
+        spacer.style.height = extraHeight + 'px';
+        spacer.style.width = '1px';
+        spacer.style.pointerEvents = 'none';
+        document.body.appendChild(spacer);
+      }
+      else {
+        var spacerRect = spacer.getBoundingClientRect();
+        spacer.style.height = extraHeight + spacerRect.height + 'px';
+      }
+    }
+
+    window.scrollTo({
+      top: requiredScrollTop,
+      behavior: 'smooth'
+    });
+  }
+
+  return {
+    setDocument,
+    scrollToLine,
+    dispose: () => {}
+  }
 })();

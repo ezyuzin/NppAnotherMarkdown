@@ -298,14 +298,14 @@ window.viewPlugin = (() => {
   }
 
   /** url: string */
-  const init = async (container, url, options) => {
-    
-    options = { 
+  const setDocument = async (container, url, options) => {
+
+    options = {
       changed: false,
       lineMark: false,
       ...options || {},
     }
-    
+
     await Promise.all(dependencies);
     const content = await (await fetch(url)).text();
     if (context['current.url'] === url && context['current.content'] === content) {
@@ -344,5 +344,9 @@ window.viewPlugin = (() => {
     }
   }
 
-  return init;
+  return {
+    setDocument,
+    scrollToLine: () => {},
+    dispose: () => {}
+  }
 })();
