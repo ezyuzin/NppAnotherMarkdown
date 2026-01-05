@@ -10,11 +10,12 @@
     <script>
       (function() {
         const view = window.viewLoader(
-          "http://local.example/__MD_FILENAME__", 
+          "http://local.example/__MD_FILENAME__",
           "http://assets.example/markdown/__CSS_NAME__",
-          "__WITH_LINE_MARKER__"        
+          "__WITH_LINE_MARKER__"
         );
         window.contentChanged = view.documentChanged;
+        window.scrollToLine = view.scrollToLine;
       })();
 
     </script>

@@ -109,22 +109,6 @@ namespace AnotherMarkdown.Forms
       base.WndProc(ref m);
     }
 
-    public bool IsValidFileExtension(string filename)
-    {
-      if (_settings.AllowAllExtensions) {
-        return true;
-      }
-
-      var currentExtension = Path.GetExtension(filename).ToLower();
-      var matchExtensionList = false;
-      try {
-        matchExtensionList = _settings.SupportedFileExt.Split(',').Any(ext => ext != null && currentExtension.Equals("." + ext.Trim().ToLower()));
-      }
-      catch (Exception) { }
-
-      return matchExtensionList;
-    }
-
     private Task _webviewInitTask;
     private Task _renderTask;
     private Settings _settings;

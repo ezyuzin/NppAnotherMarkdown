@@ -8,23 +8,27 @@ namespace AnotherMarkdown
   {
     public static void OnNotification(ScNotification notification)
     {
-      mdpanel.OnNotification(notification);
+      try {
+        mdpanel?.OnNotification(notification);
+      }
+      catch (Exception) {
+      }
     }
 
     internal static void CommandMenuInit()
     {
-      mdpanel.InitCommandMenu();
+      mdpanel?.InitCommandMenu();
     }
 
     internal static void SetToolBarIcon()
     {
-      mdpanel.SetToolBarIcon();
+      mdpanel?.SetToolBarIcon();
     }
 
     internal static void PluginCleanUp()
     {
-      mdpanel.PluginCleanUp();
-      mdpanel.Dispose();
+      mdpanel?.PluginCleanUp();
+      mdpanel?.Dispose();
       mdpanel = null;
     }
 

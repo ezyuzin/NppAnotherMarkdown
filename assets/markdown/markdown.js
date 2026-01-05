@@ -3,6 +3,7 @@ const markdownScripts = [
  "http://assets.example/markdown/markdown-it@14.1.0.min.js",
  "http://assets.example/markdown/markdown-it-attrs@4.1.0.js",
  "http://assets.example/markdown/markdown-it-task-lists.min.js",
+ "http://assets.example/markdown/markdown-it-linemark.js",
  "http://assets.example/markdown/markdown-it-embed.js"
 ].map(li => {
   const script = document.createElement("script");
@@ -10,19 +11,24 @@ const markdownScripts = [
   script.defer = true;
   document.head.appendChild(script);
   return new Promise((resolve) => {
-    script.onload = () => resolve();    
+    script.onload = () => resolve();
   });
 });
 
 window.viewPlugin = (() => {
-  let context = {};
+  let context = {
+    source: "",
+    sourceUrl: "",
+    lineMark: false
+  };
 
-  async function importMarkdown(container, url, options) {
+  async function setDocument(container, url, options) {
     options = {
       lineMark: false,
+      modified: false,
       ...(options || {})
     }
-    
+    document.title = decodeURI(url.match(/\/([^\/]+)$/)[1]);
     await Promise.all(markdownScripts);
 
     const response = await fetch(url);
@@ -30,30 +36,39 @@ window.viewPlugin = (() => {
     const decoder = new TextDecoder(detect_charset(new Uint8Array(data)));
     let source = decoder.decode(data);
 
-    if (options.lineMark) {
-      source = setLineMarkers(source);
+    if (context.sourceUrl === url && context.source === source && context.lineMark === options.lineMark) {
+      return;
     }
+
+    context.source = source;
+    context.sourceUrl = url;
+    context.lineMark = options.lineMark;
 
     const renderCompleted = Promise.withResolvers();
     context.documentReady = renderCompleted.promise;
+    context.postRender = [];
 
     const md = window.markdownit({
       html: true
     });
     md.use(window.markdownItAttrs);
-    md.use(window.markdownitTaskLists);
     md.use(window.markdownItEmbedd, {
       config: [
         embedPano360(),
         embedQrCode()
       ]
     });
+    md.use(...markdownItTaskLists());
+    if (options.lineMark) {
+      md.use(window.markdownItLineMark);
+    }
 
     let html = md.render(source);
-    if (options.lineMark) {
-      html = applyLineMarkers(html);
-    }
     container.innerHTML = html;
+    if (context.postRender.length !== 0) {
+      await Promise.all(context.postRender.map(li => li()));
+      context.postRender = [];
+    }
     renderCompleted.resolve();
 
     container.querySelectorAll("script").forEach((oldScript) => {
@@ -98,6 +113,48 @@ window.viewPlugin = (() => {
         acc[key] = value;
         return acc;
       }, {});
+  }
+
+  function markdownItTaskLists() {
+    async function onTaskChanged(e) {
+      const target = e.target;
+      const nline = target.attributes['data-line'].value;
+      let symbol = target.attributes['data-symbol'].value;
+
+      const lines = context.source.split("\n");
+      let line = lines[nline];
+      const pattern = `[${symbol}]`;
+      let pos = line.indexOf(pattern);
+      if (pos !== -1) {
+        let newline = line.substring(0, pos);
+        symbol = (target.checked ? "x" : " ");
+        target.attributes['data-symbol'].value = symbol;
+
+        newline += ("[" + symbol + "]");
+        newline += line.substring(pos + pattern.length);
+        lines[nline] = newline;
+
+        context.source = lines.join("\n");
+        await fetch(context.sourceUrl, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "text/text"
+          },
+          body: context.source
+        });
+      }
+    }
+
+    context.postRender.push(async() => {
+      const inputs = Array.from(document.getElementsByClassName('task-list-item-checkbox')).filter(li => li.localName === "input" && li.type === 'checkbox');
+      for(let input of inputs) {
+        input.onchange = onTaskChanged;
+      }
+    });
+    return [
+      window.markdownItTaskLists, {
+      enabled: true
+    }];
   }
 
   function embedQrCode() {
@@ -197,101 +254,111 @@ window.viewPlugin = (() => {
   }
 
   function embedPano360() {
-    let registered = false;
-    let panoramas = [];
+    let panoIdSeq = 0;
     return {
       name: "pano360",
       allowInline: false,
-      setup: (config) => {
-        if (!registered) {
-          registered = true;
+      setup: (configFile) => {
+        if (!context['pano360.loader']) {
+          loader = Promise.withResolvers();
           registerCss("pannellum.css");
-          registerJs('pannellum.js').onload = async() => {
-            for (let id = 0; id < panoramas.length; id++) {
-              const configFile = panoramas[id];
-              const config = await (await fetch(configFile)).json();
-              config.default.basePath = (configFile.match(/^(.*)(\/)[^\/]*$/))[1] + "/";
-              pannellum.viewer(`pano${id + 1}`, config);
+          registerJs('pannellum.js').onload = () => loader.resolve();
+          context['pano360.loader'] = loader.promise;
+        }
+
+        const panoramaId = ++panoIdSeq;
+        const sceneId = `pano360.scene[${panoramaId}]`;
+        if (context[sceneId]) {
+          const element = document.getElementById(`pano${panoramaId}`);
+          context[sceneId].div = element;
+          element.parentElement.removeChild(element);
+        }
+
+        context.postRender.push(async() => {
+          const config = await (await fetch(configFile)).json();
+          config.default.basePath = (configFile.match(/^(.*)(\/)[^\/]*$/))[1] + "/";
+
+          const scene = {
+            elementId: `pano${panoramaId}`,
+            configText: JSON.stringify(config)
+          }
+
+          if (context[sceneId]) {
+            if (context[sceneId].div && context[sceneId].configText === scene.configText) {
+              const element = document.getElementById(scene.elementId);
+              if (element) {
+                const parentElement = element.parentElement;
+                parentElement.removeChild(element);
+                parentElement.appendChild(context[sceneId].div);
+                delete context[sceneId].div;
+                return;
+              }
             }
           }
-        }
-        panoramas.push(config);
+          await context['pano360.loader'];
+          context[sceneId] = scene;
+          pannellum.viewer(`pano${panoramaId}`, config);
+        });
+
         return `
 <div class="panorama">
-  <div id="pano${panoramas.length}"></div>
+  <div id="pano${panoramaId}"></div>
 </div>`
       }
     }
   }
+  function scrollToLine(line) {
+    if (line === 0) {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+      return;
+    }
 
-  function setLineMarkers(content) {
-    let tags = []
-    return content.replaceAll("\r\n", "\n")
-      .split("\n")
-      .map((li, num) => {
-        let result = '';
-        while(li.length !== 0) {
-          if (tags.length !== 0) {
-            const tag = tags.pop();
-            let pos = li.indexOf(tag);
-            if (pos !== -1) {
-              result += li.substring(0, pos + tag.length);
-              li = li.substring(pos + tag.length);
-              continue;
-            }
-            tags.push(tag);
-            result += li;
-            li = '';
-            break;
-          }
+    let index = 0;
+    let element = null;
+    while(true) {
+      element = document.getElementById(`LINE${line++}`);
+      if (element) {
+        break;
+      }
+      if (++index === 10) {
+        return;
+      }
+    }
 
-          let match = li.match(/^(\s+|#+|\-+|\=+|\*+|\>+|\|+)/);
-          match = match || li.match(/^(\d+\.)/)
-          if (match) {
-            result += match[1];
-            li = li.substring(match[1].length);
-            continue;
-          }
-          if (li.startsWith('{%')) {
-            li = li.substring(2);
-            result += "{%";
-            tags.push("%}");
-            continue;
-          }
-          if (li.startsWith('```')) {
-            li = li.substring(3);
-            result += "```";
-            tags.push("```");
-            continue;
-          }
-          match = li.match(/^<(br|hr)(\s*\/)?>/)
-          if (match) {
-            li = li.substring(match[0].length);
-            result += match[0];
-            continue;
-          }
+    var spacer = document.getElementById('spacer');
+    var rect = element.getBoundingClientRect();
 
-          match = li.match(/^<([^\s\/>]+)([^\/]*)>/)
-          if (match) {
-            li = li.substring(match[0].length);
-            result += match[0];
-            tags.push(`</${match[1]}>`);
-            continue;
-          }
-          break;
-        }
-        if (li !== "") {
-          result += (tags.length === 0)
-            ? `MLINE:${num}:` + li
-            : li
-        }
-        return result;
-      })
-      .join("\r\n");
-  }
-  function applyLineMarkers(html) {
-    return html.replaceAll(/MLINE:(\d+):/g, '<a id="LINE$1"></a>');
+    var elementTop = rect.top + window.pageYOffset;
+    var requiredScrollTop = elementTop;
+    var maxScrollTop = document.documentElement.scrollHeight - window.innerHeight;
+    if (requiredScrollTop > maxScrollTop) {
+      var extraHeight = requiredScrollTop - maxScrollTop;
+      if (!spacer) {
+        spacer = document.createElement('div');
+        spacer.id = 'spacer';
+        spacer.style.height = extraHeight + 'px';
+        spacer.style.width = '1px';
+        spacer.style.pointerEvents = 'none';
+        document.body.appendChild(spacer);
+      }
+      else {
+        var spacerRect = spacer.getBoundingClientRect();
+        spacer.style.height = extraHeight + spacerRect.height + 'px';
+      }
+    }
+
+    window.scrollTo({
+      top: requiredScrollTop,
+      behavior: 'smooth'
+    });
   }
 
-  return importMarkdown;
+  return {
+    setDocument,
+    scrollToLine,
+    dispose: () => {}
+  }
 })();
