@@ -12,13 +12,16 @@ Fixes:
 
 ### Version 0.1.2 (released 2026-01-03)
 
-* fix: minor, but possible memory leaks
+Fixes:
+- [x] minor, but possible memory leaks
 
 ### Version 0.1.1 (released 2025-12-30)
 
-* added scene editor for 360 panoramic photos. + 360 pano scene example
-* fix: some memory leaks
-* fix: scrolling
+* Scene editor for 360 panoramic photos. + 360 pano scene example
+
+Fixes:
+- [x] some memory leaks
+- [x] scrolling, positioning in the viewer when changing the caret position
 
 ### Version 0.1.0 (released 2025-12-26)
 
