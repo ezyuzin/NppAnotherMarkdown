@@ -102,7 +102,7 @@ namespace AnotherMarkdown
             var currentPos = scintillaGateway.GetCurrentLineNumber();
             if (_lastCaretPosition != currentPos) {
               _lastCaretPosition = currentPos;
-              if (_skipScrollEventDue < DateTime.UtcNow) {
+              if (_skipSyncEventsDue < DateTime.UtcNow) {
                 ScrollToElementAtLineNo(_lastCaretPosition);
               }
             }
@@ -113,7 +113,7 @@ namespace AnotherMarkdown
 
             if (_currentFirstVisibleLine != currentPos) {
               _currentFirstVisibleLine = currentPos;
-              if (_skipScrollEventDue < DateTime.UtcNow) {
+              if (_skipSyncEventsDue < DateTime.UtcNow) {
                 var docLine = scintillaGateway.DocLineFromVisible(currentPos);
                 ScrollToElementAtLineNo(docLine);
               }
@@ -122,7 +122,9 @@ namespace AnotherMarkdown
           break;
         }
         case (uint) NppMsg.NPPN_BUFFERACTIVATED: {
-          RenderMarkdownDirect();
+          if (_skipSyncEventsDue < DateTime.UtcNow) {
+            RenderMarkdownDirect();
+          }
           break;
         }
         case (uint) (NppMsg.NPPN_FIRST + 27): {
@@ -222,15 +224,16 @@ namespace AnotherMarkdown
     private void DocumentChanged(DocumentContentChanged args)
     {
       var scintillaGateway = scintillaGatewayFactory();
+      var firstVisible = scintillaGateway.GetFirstVisibleLine();
+
       int pos = scintillaGateway.GetCurrentPos();
+      _skipSyncEventsDue = DateTime.UtcNow.AddSeconds(1);
+
       scintillaGateway.SetText(args.Content);
-
-      if (SyncViewEnabled) {
-        _skipScrollEventDue = DateTime.UtcNow.AddSeconds(1);
-      }
-
       scintillaGateway.GotoPos(pos);
-      scintillaGateway.ScrollCaret();
+      if (firstVisible != 0) {
+        scintillaGateway.LineScroll(0, firstVisible);
+      }
     }
 
     private void ShowHelp()
@@ -535,6 +538,6 @@ namespace AnotherMarkdown
     private Icon _icon;
     private Bitmap _iconBmp;
     private bool _disposedValue;
-    private DateTime _skipScrollEventDue = DateTime.MinValue;
+    private DateTime _skipSyncEventsDue = DateTime.MinValue;
   }
 }

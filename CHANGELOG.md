@@ -17,7 +17,9 @@ Fixes:
 
 ### Version 0.1.1 (released 2025-12-30)
 
-* Scene editor for 360 panoramic photos. + 360 pano scene example
+* Scene editor for 360 panoramic photos.
+* 360 pano scene example  
+![](example/pano/preview.gif)
 
 Fixes:
 - [x] some memory leaks
