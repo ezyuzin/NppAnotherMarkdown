@@ -7,20 +7,18 @@ A plugin for previewing Markdown files in Notepad++.
 
 The plugin is a fork of the [NppMarkdownPanel plugin](https://github.com/mohzy83/NppMarkdownPanel) and uses the [markdown-it](https://github.com/markdown-it/markdown-it) javascript library to render Markdown documents into HTML and allows configuring used Markdown extensions **without recompiling or reinstalling the plugin** (just edit `assets/markdown/markdown.js`).
 
-Also,
-
-* Added support for editing and view interactive 360-degree panoramic photos into Markdown. Extension uses [panellum](https://github.com/mpetroff/pannellum) library and invokes with markdown markup syntax `{% pano360 path_to_scene %}`. Example can be found [here](https://github.com/ezyuzin/NppAnotherMarkdown/tree/master/example/pano).  
+* Editing and preview interactive 360-degree panoramic photos into Markdown. Extension uses [panellum](https://github.com/mpetroff/pannellum) library and invokes with markdown markup syntax `{% pano360 path_to_scene %}`. Example can be found [here](https://github.com/ezyuzin/NppAnotherMarkdown/tree/master/example/pano).  
   Open index.pano360.json in Notepad++ for editing, the AnotherMarkdown preview makes scene editing easier.
   
-* Added a plugin for displaying QR codes
-  `{% qrcode text="12345" %}`
+* Displaying QR codes
+`{% qrcode text="12345" %}`
 
 ![](example/pano/preview.gif)
 
 
 ### Current Version
 
-The current version is **0.1.1** and can be found [here](https://github.com/ezyuzin/NppAnotherMarkdown/releases)
+The current version can be found [here](https://github.com/ezyuzin/NppAnotherMarkdown/releases)
 
 {% qrcode text="https://github.com/ezyuzin/NppAnotherMarkdown/releases" %}
 
@@ -44,8 +42,8 @@ Windows blocks downloaded DLLs by default. That means you likely get the followi
 
 > Failed to load <br>
 > AnotherMarkdown.dll is not compatible with the current version of Notepad++
-	
-Make sure to unblock __all__ DLLs of the plugin (also DLLs in subfolders).
+
+Make sure to unblock __all__ DLLs of the plugin (also DLLs in subfolders).  
 ![npp-unblock](help/npp-unblock.png "Unblock all DLLs")
 
 **Note for Windows 7 users:**
@@ -74,37 +72,11 @@ To open the settings for this plugin: Plugins -> AnotherMarkdown -> Settings
 * #### Zoom Level
     This allows you to set the zoom level of the preview
 
-* #### Automatic HTML Output
-    This allows you to select a file to save the rendered HTML to every time the preview is rendered. This is a way to automatically save the rendered content to use elsewhere. Leaving this empty disables the automatic saving.  
-    __Note: This is a global setting, so all previewed documents will save to the same file.__
-
-* #### Allow all file extensions
-   This option allows you to skip file extension checking. Every active file will be processed by the markdown converter.
-   But be careful, this option may have undesired effects. (e.g. rendering large logs or large source code files can be slow)
-   The input field for supported file extensions is disabled when this option is checked.
-
-* #### Supported File Extensions
-    This allows you to define a list of file extensions, which are supported and displayed in Markdown Panel.
-	Other file type won't be displayed (there will be a warning).
-	The file extensions have to be separated by a comma `,` - character.
-	No input allowed when option "Allow all file extensions" is checked.
-
-* #### Automatically show panel for supported files
-    When this option is checked, Markdown Panel will open the preview window automatically for files with a supported extension.
-	The preview will be closed for files with no supported extension.
-	
-
 * #### Show Toolbar in Preview Window
     Checking this box will enable the toolbar in the preview window. By default, this is unchecked.
 
 * #### Show Statusbar in Preview Window (Preview Links)
     Checking this box will show the status bar, which previews urls for links. By default, this is unchecked.
-
-
-### Preview Window Toolbar
-
-* #### Save As... ![save-btn](help/save-btn.png)
-    Clicking this button allows you to save the rendered preview as an HTML document.
 
 ### Synchronize viewer with caret position
 
@@ -116,20 +88,6 @@ This is similar to the _Synchronize Vertical Scrolling_ option of Notepad++ for 
 When this option is enabled, the plugin ensures that the first visible line in the 
 editor is also visible in the preview. (This is an alternative to _Synchronize viewer with caret position_)
 
-## Version History
-### Version 0.1.0 (released 2025-12-26)
-
-* Removed support for IE11
-* Removed support for the MarkdownDig library
-* Markdown rendering using the [markdown-it](https://github.com/markdown-it/markdown-it) library
-* Added a plugin for displaying panoramic photos; the plugin is not part of the Markdown standard
-  `{% pano360 %}`
-* Added a plugin for displaying QR codes; the plugin is not part of the Markdown standard
-  `{% qrcode text="12345" %}`
-* Fixes for more accurate positioning in the viewer when changing the caret position or the first line
-
-
-
 ### Used libs and resources
 
 | Name                              | Version     | Authors       | Link                                                                                                                   |
@@ -138,11 +96,9 @@ editor is also visible in the preview. (This is an alternative to _Synchronize v
 | NppMarkdownPanel                  | 0.9.0    	  | mohzy83       | [https://github.com/mohzy83/NppMarkdownPanel](https://github.com/mohzy83/NppMarkdownPanel) |
 | EdgeViewer                        | 1.0.9    	  | rg-software   | [https://github.com/rg-software/wlx-edge-viewer](https://github.com/rg-software/wlx-edge-viewer) |
 | WebView2 Edge				              | 1.0.3296.44 | Microsoft     | [https://developer.microsoft.com/de-de/microsoft-edge/webview2?form=MA13LH](https://developer.microsoft.com/de-de/microsoft-edge/webview2?form=MA13LH) |
-| github-markdown-css               | 3.0.1       | sindresorhus  | [https://github.com/sindresorhus/github-markdown-css](https://github.com/sindresorhus/github-markdown-css)             |
 | Markdown Icon                     |             | dcurtis       | [https://github.com/dcurtis/markdown-mark](https://github.com/dcurtis/markdown-mark)                                   |
 
 ### Contributors
 
 ## License
-
 This project is licensed under the MIT License - see the LICENSE.txt file for details

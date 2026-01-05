@@ -164,7 +164,6 @@ jobs:
           name: ${{ steps.create-release.outputs.X64_NAME }}
           path: Release\${{ steps.create-release.outputs.X64_NAME }}
 
-
       - name: Create ZIPs for release
         if: github.ref_name == 'master'        # <-- выполняется только на master
         shell: pwsh
@@ -178,7 +177,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.version.outputs.APP_VERSION }}
-          name: AnotherMarkdown v${{ steps.version.outputs.APP_VERSION }}
+          name: NppAnotherMarkdown ${{ steps.version.outputs.APP_VERSION }}
           draft: false
           prerelease: false
           files: |
