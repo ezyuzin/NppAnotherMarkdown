@@ -71,6 +71,14 @@ jobs:
           $content = $content `
             -replace 'AssemblyVersion\(".*?"\)', "AssemblyVersion(`"$newVersion`")" `
             -replace 'AssemblyFileVersion\(".*?"\)', "AssemblyFileVersion(`"$newVersion`")"
+            
+          $copyright = [regex]::Match($content,  'AssemblyCopyright\("(.*?)"\)');
+          $copyrightText = $copyright.Groups[1].Value;
+          $match = [regex]::Match($copyrightText, '^(.*\s)(20\d\d)$');
+          if ($match.Success -and (([int]::Parse($match.Groups[2].Value)) -lt [datetime]::UtcNow.Year)) {
+            $copyrightText += "-" + [datetime]::UtcNow.Year.ToString();
+            $content = $content.Replace($copyright.Groups[0].Value, 'AssemblyCopyright("' + $copyrightText + '")');
+          }          
 
           Set-Content $file $content -Encoding UTF8
           "APP_VERSION=$newVersion" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
