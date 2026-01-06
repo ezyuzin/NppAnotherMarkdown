@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -20,7 +19,6 @@ namespace PanelCommon
     EventHandler<DocumentContentChanged> DocumentChanged { get; set; }
 
     void AddToHost(Control host);
-    void PrepareContentUpdate(bool preserveVerticalScrollPosition);
     Task SetContent(string content, string documentPath, string assetsPath, string customCssFile, bool syncView);
     Task SetZoomLevel(int zoomLevel);
     void ScrollToElementWithLineNo(int lineNo);
