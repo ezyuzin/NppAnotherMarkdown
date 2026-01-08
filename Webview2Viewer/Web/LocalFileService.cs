@@ -14,16 +14,16 @@ namespace Webview2Viewer.Web
 {
   internal class LocalFileService: IWebService
   {
-    public EventHandler<DocumentContentChanged> DocumentChanged { get; set; }
     public string DocumentUri { get; private set; }
     public string DocumentPath { get; private set; }
     public string DocumentContent { get; set; }
     public string Hostname { get; }
 
-    public LocalFileService(CoreWebView2Environment environment, string host)
+    public LocalFileService(CoreWebView2Environment environment, string host, IEventDispatcher eventDispatcher)
     {
       _httpEnvironment = environment;
       Hostname = host;
+      _on = eventDispatcher;
     }
 
     public void SetContent(string documentPath, string content)
@@ -75,7 +75,7 @@ namespace Webview2Viewer.Web
 
       e.Response = _httpEnvironment.CreateWebResourceResponse(new MemoryStream(), 200, "OK", string.Join("\r\n", headers));
 
-      new Task(() => DocumentChanged?.Invoke(this, new DocumentContentChanged {
+      new Task(() => _on.DocumentChanged?.Invoke(this, new DocumentContentChanged {
         Content = requestBody
       })).Start();
     }
@@ -187,5 +187,6 @@ namespace Webview2Viewer.Web
 
     private byte[] _documentBytesData;
     private readonly CoreWebView2Environment _httpEnvironment;
+    private readonly IEventDispatcher _on;
   }
 }

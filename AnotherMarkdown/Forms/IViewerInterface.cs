@@ -1,5 +1,4 @@
 ﻿using AnotherMarkdown.Entities;
-using PanelCommon;
 using System;
 
 namespace AnotherMarkdown.Forms
@@ -10,7 +9,5 @@ namespace AnotherMarkdown.Forms
     void UpdateSettings(Settings settings);
     void RenderMarkdown(string currentText, string filepath);
     void ScrollToElementWithLineNo(int lineNo);
-
-    EventHandler<DocumentContentChanged> OnDocumentContentChanged { get; set; }
   }
 }

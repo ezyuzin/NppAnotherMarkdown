@@ -4,7 +4,6 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -27,9 +26,8 @@ namespace AnotherMarkdown
           lock (_lock) {
             if (_previewForm == null) {
               _previewForm = MarkdownPreviewForm.InitViewer(_settings, HandleWndProc);
-              _previewForm.OnDocumentContentChanged += (s, e) => {
-                DocumentChanged(e);
-              };
+              _previewForm.OnEvent.DocumentChanged += (_, e) => DocumentChanged(e);
+              _previewForm.OnEvent.TrackFirstLine += (_, e) => FirstLineChanged(e);
             }
           }
         }
@@ -218,6 +216,19 @@ namespace AnotherMarkdown
           PreviewForm.UpdateSettings(_settings);
           RenderMarkdownDirect();
         }
+      }
+    }
+
+    private void FirstLineChanged(FirstLineChanged args)
+    {
+      var scintillaGateway = scintillaGatewayFactory();
+      var visibleLine = scintillaGateway.GetFirstVisibleLine();
+      var docLine = scintillaGateway.DocLineFromVisible(visibleLine);
+      var newVisibleLine = scintillaGateway.VisibleFromDocLine(args.Line);
+
+      if (visibleLine != newVisibleLine) {
+        scintillaGateway.LineScroll(0, newVisibleLine - visibleLine);
+        _skipSyncEventsDue = DateTime.UtcNow.AddSeconds(1);
       }
     }
 
@@ -460,7 +471,6 @@ namespace AnotherMarkdown
       }
     }
 
-
     protected virtual void Dispose(bool disposing)
     {
       if (!_disposedValue) {
@@ -539,5 +549,7 @@ namespace AnotherMarkdown
     private Bitmap _iconBmp;
     private bool _disposedValue;
     private DateTime _skipSyncEventsDue = DateTime.MinValue;
+
+    private EventDispatcher _on;
   }
 }

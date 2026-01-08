@@ -7,4 +7,10 @@ namespace PanelCommon
   {
     public string Content;
   }
+
+  [StructLayout(LayoutKind.Sequential)]
+  public struct FirstLineChanged
+  {
+    public int Line;
+  }
 }

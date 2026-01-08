@@ -5,6 +5,8 @@ using System.Linq;
 using System.Text;
 using Microsoft.Web.WebView2.Core;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using PanelCommon;
 
 namespace Webview2Viewer.Web
 {
@@ -13,31 +15,13 @@ namespace Webview2Viewer.Web
   {
     public string Hostname { get; }
 
-    public ApiService(CoreWebView2Environment environment, string host)
+    public ApiService(CoreWebView2Environment environment, string host, IEventDispatcher eventDispatcher)
     {
       _httpEnvironment = environment;
       Hostname = host;
-
-      _methods.Add(new ApiMethod { Method = "GET", Path = "/event", Handler = GetWebEvent });
-      _methods.Add(new ApiMethod { Method = "POST", Path = "/event", Handler = PostWebEvent });
+      _on = eventDispatcher;
+      _methods.Add(new ApiMethod { Method = "POST", Path = "/webevent", Handler = PostWebEvent });
     }
-
-    private CoreWebView2WebResourceResponse GetWebEvent(CoreWebView2WebResourceRequest request)
-    {
-      string requestBody;
-      using (var reader = new StreamReader(request.Content, Encoding.UTF8)) {
-        requestBody = reader.ReadToEnd();
-      }
-      var webEvent = JsonConvert.DeserializeObject<WebEventDto>(requestBody);
-      switch (webEvent.EventName) {
-        case "window.scroll": {
-          break;
-        }
-      }
-      return Json(new string[] { });
-    }
-
-
     private CoreWebView2WebResourceResponse PostWebEvent(CoreWebView2WebResourceRequest request)
     {
       string requestBody;
@@ -46,7 +30,11 @@ namespace Webview2Viewer.Web
       }
       var webEvent = JsonConvert.DeserializeObject<WebEventDto>(requestBody);
       switch (webEvent.EventName) {
-        case "window.scroll": {
+        case "trackFirstLine": {
+          var value = webEvent.Payload["line"]?.ToObject<int>();
+          if (value != null && _on.TrackFirstLine != null) {
+            _on.TrackFirstLine(this, new FirstLineChanged { Line = value.Value });
+          }
           break;
         }
       }
@@ -131,10 +119,8 @@ namespace Webview2Viewer.Web
       public Func<CoreWebView2WebResourceRequest, CoreWebView2WebResourceResponse> Handler { get; set; }
     }
 
-
     private List<ApiMethod> _methods = new List<ApiMethod>();
     private readonly CoreWebView2Environment _httpEnvironment;
+    private readonly IEventDispatcher _on;
   }
-
-
 }

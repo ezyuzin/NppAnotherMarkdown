@@ -15,7 +15,6 @@ namespace Webview2Viewer
 {
   public class Webview2WebbrowserControl : IDisposable
   {
-    public EventHandler<DocumentContentChanged> DocumentChanged { get; set; }
     public Action<string> StatusTextChangedAction { get; set; }
     public Action RenderingDoneAction { get; set; }
 
@@ -30,11 +29,12 @@ namespace Webview2Viewer
       _webView = null;
     }
 
-    public Task InitializeAsync(ISettings settings)
+    public Task InitializeAsync(ISettings settings, IEventDispatcher eventDispatcher)
     {
       lock (_webViewInitLock) {
         if (_webViewInit == null) {
           _settings = settings;
+          _on = eventDispatcher;
           _webViewInit = InitializeWebViewAsync();
         }
       }
@@ -62,11 +62,10 @@ namespace Webview2Viewer
       webView.CoreWebView2.WebResourceRequested += CoreWebView2_WebResourceRequested;
       _webView = webView;
 
-      var fs = new LocalFileService(webEnvironment, "local.example");
-      fs.DocumentChanged += (e, args) => DocumentChanged?.Invoke(e, args);
+      var fs = new LocalFileService(webEnvironment, "local.example", _on);
       AddWebService(fs);
 
-      var api = new ApiService(webEnvironment, "api.example");
+      var api = new ApiService(webEnvironment, "api.example", _on);
       AddWebService(api);
     }
 
@@ -116,10 +115,9 @@ namespace Webview2Viewer
       var lineMark = (_settings.SyncViewWithFirstVisibleLine || _settings.SyncViewWithCaretPosition);
 
 
-      var reload = (fs.DocumentPath != documentPath);
+      var reload = (_documentPath != documentPath);
       reload = reload || (_assetPath != assetsPath);
       reload = reload || (_cssFile != cssFile);
-      reload = reload || (_lineMark != lineMark);
       reload = reload || (_lineMark != lineMark);
       reload = reload || (_trackFirstLine != _settings.SyncViewWithFirstVisibleLine);
 
@@ -136,6 +134,7 @@ namespace Webview2Viewer
       fs.SetContent(documentPath, content);
 
       if (reload) {
+        _documentPath = documentPath;
         _cssFile = cssFile;
         _lineMark = lineMark;
         _trackFirstLine = _settings.SyncViewWithFirstVisibleLine;
@@ -163,9 +162,9 @@ namespace Webview2Viewer
 
         await ExecuteWebviewAction(() => _webView.NavigateToString(loader));
         await SetZoomLevel(_settings.ZoomLevel);
+        
       }
       else {
-        fs.SetContent(documentPath, content);
         await ExecuteWebviewAction(() => _webView.ExecuteScriptAsync("window.contentChanged();"));
       }
     }
@@ -238,8 +237,10 @@ namespace Webview2Viewer
     private string _assetPath;
     private ISettings _settings;
 
+    private string _documentPath;
     private bool _lineMark;
     private bool _trackFirstLine;
     private List<IWebService> _webServices = new List<IWebService>();
+    private IEventDispatcher _on;
   }
 }

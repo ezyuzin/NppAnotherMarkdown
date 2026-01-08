@@ -22,45 +22,6 @@ window.viewPlugin = (() => {
     lineMark: false
   };
 
-  async function sendWebEvent(name, payload) {
-    await fetch('http://api.example/webevent', {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        event: name,
-        payload
-      })
-    });
-  }
-
-  function trackFirstLine(event) {
-    if (context.trackFirstLineActive) {
-      return;
-    }
-    setTimeout(async () => {
-      const lines = [...document.querySelectorAll('span.linemark')]
-        .map(el => { return { el, rect: el.getBoundingClientRect() }; } )
-        .filter(li => li.rect.top > 0 && li.rect.bottom > 0 && li.rect.top < window.innerHeight);
-
-      if (lines.length !== 0) {
-        if (lines.length > 1) {
-          lines.sort((a, b) => a.rect.left - b.rect.left);
-          lines.sort((a, b) => a.rect.top - b.rect.top);
-        }
-        const line = Number.parseInt(`${lines[0].el.id}`.match(/^LINE(\d+)$/)[1]);
-        if (context.lastTrackFirstLine !== line) {
-          context.lastTrackFirstLine = line;
-          console.log({ line });
-          await sendWebEvent("trackFirstLine", { line });
-        }
-      }
-      context.trackFirstLineActive = false;
-    }, 20);
-    context.trackFirstLineActive = true;
-  }
-
   async function setDocument(container, args) {
     let options = {
       document: "",
@@ -80,7 +41,12 @@ window.viewPlugin = (() => {
     let source = decoder.decode(data);
 
     document.removeEventListener("scroll", trackFirstLine);
-
+    if (options.trackFirstLine) {
+      document.addEventListener("scroll", trackFirstLine);
+      if (options.modified === false) {
+        context.lastTrackFirstLine = 0;
+      }
+    }
     if (context.sourceUrl === url && context.source === source && context.lineMark === options.lineMark) {
       return;
     }
@@ -115,10 +81,6 @@ window.viewPlugin = (() => {
       context.postRender = [];
     }
     renderCompleted.resolve();
-
-    if (options.trackFirstLine) {
-      document.addEventListener("scroll", trackFirstLine);
-    }
 
     container.querySelectorAll("script").forEach((oldScript) => {
       const newScript = document.createElement("script");
@@ -411,6 +373,61 @@ window.viewPlugin = (() => {
       top: requiredScrollTop,
       behavior: 'smooth'
     });
+  }
+
+  async function sendWebEvent(name, payload) {
+    await fetch('http://api.example/webevent', {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        event: name,
+        payload
+      })
+    });
+  }
+
+  function trackFirstLine(e) {
+    if (context.trackFirstLineActive) {
+      return;
+    }
+    setTimeout(async () => {
+      context.trackFirstLineActive = false;
+      const dY = window.pageYOffset - (context.lastPageYOffset || 0);
+      context.lastPageYOffset = window.pageYOffset;
+      if (dY === 0) {
+        return;
+      }
+
+      let lines = [...document.querySelectorAll('span.linemark')]
+        .map(el => {
+          const rect = el.getBoundingClientRect();
+          return {
+            el,
+            rect,
+            dY: Math.abs(rect.top)
+          };
+        });
+
+      const dH = 0.1 * window.innerHeight;
+      lines = lines.filter(li => li.rect.bottom >= -dH && li.rect.top < dH);
+
+      if (lines.length === 0) {
+        return;
+      }
+
+      if (lines.length > 1) {
+        lines.sort((a, b) => a.rect.left - b.rect.left);
+        lines.sort((a, b) => a.dY - b.dY);
+      }
+      const line = Number.parseInt(`${lines[0].el.id}`.match(/^LINE(\d+)$/)[1]);
+      if (context.lastTrackFirstLine !== line) {
+        context.lastTrackFirstLine = line;
+        await sendWebEvent("trackFirstLine", { line });
+      }
+    }, 50);
+    context.trackFirstLineActive = true;
   }
 
   return {

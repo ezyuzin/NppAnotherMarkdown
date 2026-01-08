@@ -1,19 +1,15 @@
 ﻿using System;
 using System.Drawing;
-using System.IO;
-using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using AnotherMarkdown.Entities;
-using PanelCommon;
 using Webview2Viewer;
 
 namespace AnotherMarkdown.Forms
 {
   public partial class MarkdownPreviewForm : Form, IViewerInterface
   {
-    public EventHandler<DocumentContentChanged> OnDocumentContentChanged { get; set; }
+    public EventDispatcher OnEvent { get; set; }
 
     public static MarkdownPreviewForm InitViewer(Settings settings, ActionRef<Message> wndProcCallback)
     {
@@ -24,19 +20,17 @@ namespace AnotherMarkdown.Forms
     {
       InitializeComponent();
 
+      OnEvent = new EventDispatcher();
       _wndProcCallback = wndProcCallback;
       _settings = settings;
 
       var webview = new Webview2WebbrowserControl();
-      webview.DocumentChanged += (e, args) => {
-        OnDocumentContentChanged?.Invoke(this, args);
-      };
       webview.StatusTextChangedAction = (status) => {
         toolStripStatusLabel1.Text = status;
       };
 
       _webviewInitTask = webview
-        .InitializeAsync(new ProxySettings(_settings))
+        .InitializeAsync(new ProxySettings(_settings), OnEvent)
         .ContinueWith(t => {
           panel1.Controls.Clear();
           webview.AddToHost(panel1);
