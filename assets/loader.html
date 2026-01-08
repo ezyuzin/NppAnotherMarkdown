@@ -8,12 +8,8 @@
   <body>
     <div id="content"></div>
     <script>
-      (function() {
-        const view = window.viewLoader(
-          "http://local.example/__MD_FILENAME__",
-          "http://assets.example/markdown/__CSS_NAME__",
-          "__WITH_LINE_MARKER__"
-        );
+      (async function() {
+        const view = await window.createView(__OPTIONS__);
         window.contentChanged = view.documentChanged;
         window.scrollToLine = view.scrollToLine;
       })();

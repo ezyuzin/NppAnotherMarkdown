@@ -298,13 +298,14 @@ window.viewPlugin = (() => {
   }
 
   /** url: string */
-  const setDocument = async (container, url, options) => {
-
-    options = {
-      changed: false,
-      lineMark: false,
-      ...options || {},
+  const setDocument = async (container, options) => {
+    let options = {
+      document: "",
+      modified: false,
+      lineMark: false
     }
+    options = { ...options, ...args };
+    const { document: url } = options;
 
     await Promise.all(dependencies);
     const content = await (await fetch(url)).text();
@@ -320,7 +321,7 @@ window.viewPlugin = (() => {
     config.default.hotSpotDebug = true;
 
     let updateView = false;
-    if (options.changed && context['current.editor'] && context['current.url'] === url) {
+    if (options.modified && context['current.editor'] && context['current.url'] === url) {
       const viewer = context['current.editor'].viewer;
       const currentScene = viewer.getScene();
       if (config.scenes && config.scenes[currentScene]) {

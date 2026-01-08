@@ -63,8 +63,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="InterfaceProvider.cs" />
-    <Compile Include="WebResource.cs" />
+    <Compile Include="Web\HttpUtility2.cs" />
+    <Compile Include="Web\IWebService.cs" />
+    <Compile Include="Web\ApiService.cs" />
+    <Compile Include="Web\Dto\WebEventDto.cs" />
+    <Compile Include="Web\WebResource.cs" />
     <Compile Include="Webview2WebbrowserControl.cs" />
+    <Compile Include="Web\LocalFileService.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\PanelCommon\PanelCommon.csproj">

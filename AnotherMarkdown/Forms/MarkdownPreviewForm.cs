@@ -1,19 +1,15 @@
 ﻿using System;
 using System.Drawing;
-using System.IO;
-using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using AnotherMarkdown.Entities;
-using PanelCommon;
 using Webview2Viewer;
 
 namespace AnotherMarkdown.Forms
 {
   public partial class MarkdownPreviewForm : Form, IViewerInterface
   {
-    public EventHandler<DocumentContentChanged> OnDocumentContentChanged { get; set; }
+    public EventDispatcher OnEvent { get; set; }
 
     public static MarkdownPreviewForm InitViewer(Settings settings, ActionRef<Message> wndProcCallback)
     {
@@ -24,20 +20,17 @@ namespace AnotherMarkdown.Forms
     {
       InitializeComponent();
 
-      _defaultAssetsPath = (Path.GetDirectoryName(Assembly.GetAssembly(GetType()).Location) + "/assets").Replace("\\", "/");
+      OnEvent = new EventDispatcher();
       _wndProcCallback = wndProcCallback;
       _settings = settings;
 
       var webview = new Webview2WebbrowserControl();
-      webview.DocumentChanged += (e, args) => {
-        OnDocumentContentChanged?.Invoke(this, args);
-      };
       webview.StatusTextChangedAction = (status) => {
         toolStripStatusLabel1.Text = status;
       };
 
       _webviewInitTask = webview
-        .InitializeAsync(settings.ZoomLevel)
+        .InitializeAsync(new ProxySettings(_settings), OnEvent)
         .ContinueWith(t => {
           panel1.Controls.Clear();
           webview.AddToHost(panel1);
@@ -70,24 +63,14 @@ namespace AnotherMarkdown.Forms
     public void RenderMarkdown(string currentText, string filepath)
     {
       if ((_renderTask == null || _renderTask.IsCompleted)) {
-        var cssFile = _settings.IsDarkModeEnabled ? _settings.CssDarkModeFileName : _settings.CssFileName;
-        if (!File.Exists(cssFile)) {
-          cssFile = _settings.IsDarkModeEnabled ? Settings.DefaultDarkModeCssFile : Settings.DefaultCssFile;
-        }
 
         var context = TaskScheduler.FromCurrentSynchronizationContext();
         _renderTask = new Task(async () => {
           try {
-            var assetsPath = (!string.IsNullOrEmpty(_settings.AssetsPath) && Directory.Exists(_settings.AssetsPath))
-              ? _settings.AssetsPath
-              : _defaultAssetsPath;
-
-            var withSyncView = (_settings.SyncViewWithCaretPosition || _settings.SyncViewWithFirstVisibleLine);
 
             await _webviewInitTask;
             if (_webView != null) {
-              await _webView.SetContent(currentText, filepath, assetsPath, cssFile, withSyncView);
-              await _webView.SetZoomLevel(_settings.ZoomLevel);
+              await _webView.SetContent(currentText, filepath);
             }
           }
           catch (Exception) { }
@@ -114,6 +97,5 @@ namespace AnotherMarkdown.Forms
     private Settings _settings;
     private Webview2WebbrowserControl _webView;
     private ActionRef<Message> _wndProcCallback;
-    private string _defaultAssetsPath;
   }
 }

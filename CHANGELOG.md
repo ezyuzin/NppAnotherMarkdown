@@ -1,6 +1,12 @@
 ## Version History
 
-### Version 0.1.3 (released 2026-01-06)
+### NppAnotherMarkdown 0.1.4 (released 2026-01-08)
+
+* Syncing view for both window (text and markdown preview) when "Sync with first visible line" enabled.
+
+![](example/sync-both.gif)
+
+### NppAnotherMarkdown 0.1.3 (released 2026-01-06)
 
 * Editable tasklists, (bi-direction sync)
 
@@ -10,12 +16,12 @@ Fixes:
 
 ![](example/tasklist.gif)
 
-### Version 0.1.2 (released 2026-01-03)
+### NppAnotherMarkdown 0.1.2 (released 2026-01-03)
 
 Fixes:
 - [x] minor, but possible memory leaks
 
-### Version 0.1.1 (released 2025-12-30)
+### NppAnotherMarkdown 0.1.1 (released 2025-12-30)
 
 * Scene editor for 360 panoramic photos.
 * 360 pano scene example  
@@ -25,7 +31,7 @@ Fixes:
 - [x] some memory leaks
 - [x] scrolling, positioning in the viewer when changing the caret position
 
-### Version 0.1.0 (released 2025-12-26)
+### NppAnotherMarkdown 0.1.0 (released 2025-12-26)
 
 * Removed support for IE11
 * Removed support for the MarkdownDig library

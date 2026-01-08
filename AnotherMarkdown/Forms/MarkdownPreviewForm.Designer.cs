@@ -1,4 +1,6 @@
-﻿namespace AnotherMarkdown.Forms
+﻿using AnotherMarkdown.Entities;
+
+namespace AnotherMarkdown.Forms
 {
   partial class MarkdownPreviewForm
   {
