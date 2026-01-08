@@ -19,10 +19,12 @@ namespace AnotherMarkdown.Entities
     public string PostProcessorCommandFilename { get; set; }
     public string PostProcessorArguments { get; set; }
 
-    public static string DefaultCssFile => DefaultAssetPath + "/markdown/markdown.css";
-    public static string DefaultDarkModeCssFile => DefaultAssetPath + "/markdown/markdown-dark.css";
+    public string DefaultAssetPath { get { return _defaultAssetPath; } }
+    public string DefaultCssFile { get { return _defaultAssetPath + "/markdown/markdown.css"; } }
+    public string DefaultDarkModeCssFile { get { return _defaultAssetPath + "/markdown/markdown-dark.css"; } }
+
     public const string DEFAULT_SUPPORTED_FILE_EXT = "md,mkd,mdwn,mdown,mdtxt,markdown,txt";
 
-    public static string DefaultAssetPath => (Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "/assets").Replace("\\", "/");
+    private string _defaultAssetPath => (Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "/assets").Replace("\\", "/");
   }
 }

@@ -75,6 +75,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Entities\ProxySettings.cs" />
     <Compile Include="Entities\Settings.cs" />
     <Compile Include="Forms\AboutForm.cs">
       <SubType>Form</SubType>
@@ -165,7 +166,6 @@
     <ProjectReference Include="..\PanelCommon\PanelCommon.csproj">
       <Project>{a52a6264-26ec-4af6-9031-53b99ae4f65a}</Project>
       <Name>PanelCommon</Name>
-      <Private>False</Private>
     </ProjectReference>
     <ProjectReference Include="..\Webview2Viewer\Webview2Viewer.csproj">
       <Project>{5eec55be-f283-4f9d-a2fd-f9050bd17b59}</Project>

@@ -17,19 +17,21 @@ namespace AnotherMarkdown.Forms
 
     public SettingsForm(Settings settings)
     {
+      _defaultAssetPath = settings.DefaultAssetPath;
+
       AssetsPath = settings.AssetsPath;
       ZoomLevel = settings.ZoomLevel;
       CssFileName = settings.CssFileName;
+      if (string.IsNullOrEmpty(CssFileName)) {
+        CssFileName = settings.DefaultCssFile;
+      }
       CssDarkModeFileName = settings.CssDarkModeFileName;
+      if (string.IsNullOrEmpty(CssDarkModeFileName)) {
+        CssDarkModeFileName = settings.DefaultDarkModeCssFile;
+      }
+
       ShowToolbar = settings.ShowToolbar;
       ShowStatusbar = settings.ShowStatusbar;
-
-      if (string.IsNullOrEmpty(CssFileName)) {
-        CssFileName = Settings.DefaultCssFile;
-      }
-      if (string.IsNullOrEmpty(CssDarkModeFileName)) {
-        CssDarkModeFileName = Settings.DefaultDarkModeCssFile;
-      }
 
       InitializeComponent();
 
@@ -119,10 +121,10 @@ namespace AnotherMarkdown.Forms
     private void btnChooseAssetsDir_Click(object sender, EventArgs e)
     {
       using (var folderOpenDialog = new FolderBrowserDialog()) {
-        folderOpenDialog.SelectedPath = !string.IsNullOrEmpty(AssetsPath) ? AssetsPath : Path.GetFullPath(Settings.DefaultAssetPath);
+        folderOpenDialog.SelectedPath = !string.IsNullOrEmpty(AssetsPath) ? AssetsPath : Path.GetFullPath(_defaultAssetPath);
 
         if (folderOpenDialog.ShowDialog() == DialogResult.OK) {
-          if (folderOpenDialog.SelectedPath.Replace("\\", "/") == Settings.DefaultAssetPath) {
+          if (folderOpenDialog.SelectedPath.Replace("\\", "/") == _defaultAssetPath) {
             AssetsPath = string.Empty;
           }
           else {
@@ -144,5 +146,7 @@ namespace AnotherMarkdown.Forms
         AssetsPath = "";
       }
     }
+
+    private string _defaultAssetPath;
   }
 }
