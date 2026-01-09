@@ -5,12 +5,10 @@ using System.Linq;
 using System.Text;
 using Microsoft.Web.WebView2.Core;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using PanelCommon;
 
 namespace Webview2Viewer.Web
 {
-
   internal class ApiService: IWebService
   {
     public string Hostname { get; }

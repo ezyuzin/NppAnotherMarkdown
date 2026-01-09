@@ -1,0 +1,21 @@
+{
+  "name": "markdown-plugins",
+  "private": true,
+  "workspaces": [
+    "client"
+  ],
+  "scripts": {
+    "webpack:client": "webpack --config ./client/webpack.prod.config.js"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "nodemon": "^3.1.10",
+    "terser-webpack-plugin": "^5.3.14",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.9.2",
+    "webpack": "^5.101.3",
+    "webpack-hot-middleware": "^2.26.1",
+    "webpack-merge": "^6.0.1"
+  }
+}

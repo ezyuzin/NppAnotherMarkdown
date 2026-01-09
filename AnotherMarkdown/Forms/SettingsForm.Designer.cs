@@ -46,6 +46,8 @@
       this.btnDefaultAssetDir = new System.Windows.Forms.Button();
       this.btnChooseAssetsDir = new System.Windows.Forms.Button();
       this.tbAssetsPath = new System.Windows.Forms.TextBox();
+      this.MarkdownPlugins = new System.Windows.Forms.CheckedListBox();
+      this.label5 = new System.Windows.Forms.Label();
       this.panel1.SuspendLayout();
       ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
       ((System.ComponentModel.ISupportInitialize)(this.trackBar1)).BeginInit();
@@ -86,7 +88,7 @@
       // btnSave
       // 
       this.btnSave.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-      this.btnSave.Location = new System.Drawing.Point(468, 353);
+      this.btnSave.Location = new System.Drawing.Point(468, 576);
       this.btnSave.Name = "btnSave";
       this.btnSave.Size = new System.Drawing.Size(105, 36);
       this.btnSave.TabIndex = 20;
@@ -98,7 +100,7 @@
       // 
       this.btnCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
       this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-      this.btnCancel.Location = new System.Drawing.Point(579, 353);
+      this.btnCancel.Location = new System.Drawing.Point(579, 576);
       this.btnCancel.Name = "btnCancel";
       this.btnCancel.Size = new System.Drawing.Size(105, 36);
       this.btnCancel.TabIndex = 21;
@@ -187,7 +189,7 @@
       this.statusStrip1.ImageScalingSize = new System.Drawing.Size(20, 20);
       this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.sblInvalidHtmlPath});
-      this.statusStrip1.Location = new System.Drawing.Point(0, 401);
+      this.statusStrip1.Location = new System.Drawing.Point(0, 624);
       this.statusStrip1.Name = "statusStrip1";
       this.statusStrip1.Size = new System.Drawing.Size(696, 22);
       this.statusStrip1.TabIndex = 16;
@@ -306,12 +308,38 @@
       this.tbAssetsPath.TabIndex = 27;
       this.tbAssetsPath.Leave += new System.EventHandler(this.tbAssetsPath_Leave);
       // 
+      // MarkdownPlugins
+      // 
+      this.MarkdownPlugins.CheckOnClick = true;
+      this.MarkdownPlugins.FormattingEnabled = true;
+      this.MarkdownPlugins.Items.AddRange(new object[] {
+            "1",
+            "2",
+            "3",
+            "4",
+            "5"});
+      this.MarkdownPlugins.Location = new System.Drawing.Point(164, 335);
+      this.MarkdownPlugins.Name = "MarkdownPlugins";
+      this.MarkdownPlugins.Size = new System.Drawing.Size(513, 124);
+      this.MarkdownPlugins.TabIndex = 30;
+      // 
+      // label5
+      // 
+      this.label5.AutoSize = true;
+      this.label5.Location = new System.Drawing.Point(12, 335);
+      this.label5.Name = "label5";
+      this.label5.Size = new System.Drawing.Size(118, 17);
+      this.label5.TabIndex = 31;
+      this.label5.Text = "Markdown Plugins:";
+      // 
       // SettingsForm
       // 
       this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 17F);
       this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
       this.CancelButton = this.btnCancel;
-      this.ClientSize = new System.Drawing.Size(696, 423);
+      this.ClientSize = new System.Drawing.Size(696, 646);
+      this.Controls.Add(this.label5);
+      this.Controls.Add(this.MarkdownPlugins);
       this.Controls.Add(this.btnDefaultAssetDir);
       this.Controls.Add(this.btnChooseAssetsDir);
       this.Controls.Add(this.tbAssetsPath);
@@ -379,5 +407,7 @@
     private System.Windows.Forms.Button btnDefaultAssetDir;
     private System.Windows.Forms.Button btnChooseAssetsDir;
     private System.Windows.Forms.TextBox tbAssetsPath;
+    private System.Windows.Forms.CheckedListBox MarkdownPlugins;
+    private System.Windows.Forms.Label label5;
   }
 }

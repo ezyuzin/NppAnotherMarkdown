@@ -1,5 +1,17 @@
 ## Version History
 
+### NppAnotherMarkdown 0.1.5 (released 2026-01-??)
+
+Euler’s identity $e^{i\pi}+1=0$ is a beautiful formula in $\mathbb{R}^2$.
+
+$$ S = S_0 + V \cdot t + \frac {a \cdot t ^2} {2}$$
+
+$$
+\frac {\partial^r} {\partial \omega^r} \left(\frac {y^{\omega}} {\omega}\right)
+= \left(\frac {y^{\omega}} {\omega}\right) \left\{(\log y)^r + \sum_{i=1}^r \frac {(-1)^ Ir \cdots (r-i+1) (\log y)^{ri}} {\omega^i} \right\}
+$$
+
+
 ### NppAnotherMarkdown 0.1.4 (released 2026-01-08)
 
 * Syncing view for both window (text and markdown preview) when "Sync with first visible line" enabled.

@@ -14,6 +14,9 @@ namespace AnotherMarkdown.Entities
     public bool IsDarkModeEnabled { get; set; }
     public bool ShowToolbar { get; set; }
     public bool ShowStatusbar { get; set; }
+
+    public string[] AllowedMarkdownPlugins { get; set; }
+
     public string PreProcessorCommandFilename { get; set; }
     public string PreProcessorArguments { get; set; }
     public string PostProcessorCommandFilename { get; set; }

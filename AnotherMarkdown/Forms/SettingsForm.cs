@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Windows.Forms;
 using AnotherMarkdown.Entities;
+using Newtonsoft.Json;
 
 namespace AnotherMarkdown.Forms
 {
@@ -14,6 +17,8 @@ namespace AnotherMarkdown.Forms
     public string CssDarkModeFileName { get; set; }
     public bool ShowToolbar { get; set; }
     public bool ShowStatusbar { get; set; }
+
+    public string[] AllowedMarkdownPlugins { get; set; }
 
     public SettingsForm(Settings settings)
     {
@@ -42,6 +47,10 @@ namespace AnotherMarkdown.Forms
       tbDarkmodeCssFile.Text = CssDarkModeFileName;
       cbShowToolbar.Checked = ShowToolbar;
       cbShowStatusbar.Checked = ShowStatusbar;
+
+      var plugins = JsonConvert.DeserializeObject<string[]>(File.ReadAllText(settings.DefaultAssetPath + "/markdown/md.extensions.json"));
+      MarkdownPlugins.Items.Clear();
+      plugins.OrderBy(li => li).ToList().ForEach(name => MarkdownPlugins.Items.Add(name, settings.AllowedMarkdownPlugins.Contains(name)));
     }
 
     private void trackBar1_ValueChanged(object sender, EventArgs e)
@@ -63,6 +72,11 @@ namespace AnotherMarkdown.Forms
     private void btnSave_Click(object sender, EventArgs e)
     {
       if (string.IsNullOrEmpty(sblInvalidHtmlPath.Text)) {
+        List<string> plugins = new List<string>();
+        foreach(var item in MarkdownPlugins.CheckedItems) {
+          plugins.Add((string) item);
+        }
+        AllowedMarkdownPlugins = plugins.ToArray();
         DialogResult = DialogResult.OK;
       }
     }

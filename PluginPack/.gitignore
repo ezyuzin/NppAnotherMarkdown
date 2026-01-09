@@ -1,0 +1,7 @@
+node_modules/
+**/node_modules_web-vitals_*.bundle.js
+**/main.*.hot-update.json
+**/main.*.hot-update.js
+**/js/bundle.js
+data/*/data.db3
+dist/

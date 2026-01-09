@@ -1,25 +1,9 @@
-const markdownScripts = [
- "http://assets.example/detect-charset.js",
- "http://assets.example/markdown/markdown-it@14.1.0.min.js",
- "http://assets.example/markdown/markdown-it-attrs@4.1.0.js",
- "http://assets.example/markdown/markdown-it-task-lists.min.js",
- "http://assets.example/markdown/markdown-it-linemark.js",
- "http://assets.example/markdown/markdown-it-embed.js"
-].map(li => {
-  const script = document.createElement("script");
-  script.src = li;
-  script.defer = true;
-  document.head.appendChild(script);
-  return new Promise((resolve) => {
-    script.onload = () => resolve();
-  });
-});
-
 window.viewPlugin = (() => {
   let context = {
     source: "",
     sourceUrl: "",
-    lineMark: false
+    lineMark: false,
+    scripts: []
   };
 
   async function setDocument(container, args) {
@@ -27,13 +11,43 @@ window.viewPlugin = (() => {
       document: "",
       modified: false,
       lineMark: false,
-      trackFirstLine: false
+      trackFirstLine: false,
+      "md.extensions": []
     }
     options = { ...options, ...args };
     const { document: url } = options;
 
     document.title = decodeURI(url.match(/\/([^\/]+)$/)[1]);
-    await Promise.all(markdownScripts);
+
+    const dependencies = [
+      "detect-charset.js",
+      "markdown/markdown-it@14.1.0.min.js",
+      "markdown/markdown-it-linemark.js"
+    ]
+
+    if (options["md.extensions"].includes("katex")) {
+      dependencies.push(...[
+        "markdown/plugin-katex/katex@0.24.1.min.css",
+        "markdown/markdown-it-katex@0.24.1.min.js"
+      ]);
+    }
+    if (options["md.extensions"].includes("attrs")) {
+      dependencies.push(...[
+        "markdown/markdown-it-attrs@4.1.0.js"
+      ]);
+    }
+    if (options["md.extensions"].includes("tasks-list")) {
+      dependencies.push(...[
+        "markdown/markdown-it-task-lists@2.1.0.js"
+      ]);
+    }
+    if (["qrcode", "pano360"].some(li => options["md.extensions"].includes(li))) {
+      dependencies.push(...[
+        "markdown/markdown-it-embed.js"
+      ]);
+    }
+
+    await loadScripts(dependencies);
 
     const response = await fetch(url);
     const data = await response.arrayBuffer();
@@ -62,14 +76,28 @@ window.viewPlugin = (() => {
     const md = window.markdownit({
       html: true
     });
-    md.use(window.markdownItAttrs);
-    md.use(window.markdownItEmbedd, {
-      config: [
-        embedPano360(),
-        embedQrCode()
-      ]
-    });
-    md.use(...markdownItTaskLists());
+
+    if (options["md.extensions"].includes("attrs")) {
+      md.use(window.markdownItAttrs);
+    }
+
+    const embed = [];
+    if (options["md.extensions"].includes("qrcode")) {
+      embed.push(embedQrCode());
+    }
+    if (options["md.extensions"].includes("pano360")) {
+      embed.push(embedPano360());
+    }
+    if (embed.length !== 0) {
+      md.use(window.markdownItEmbedd, { config: embed });
+    }
+    if (options["md.extensions"].includes("tasks-list")) {
+      md.use(...markdownItTaskLists());
+    }
+     if (options["md.extensions"].includes("katex")) {
+      md.use(window.markdownItKatex, {});
+    }
+
     if (options.lineMark) {
       md.use(window.markdownItLineMark);
     }
@@ -94,21 +122,6 @@ window.viewPlugin = (() => {
     });
   }
 
-  function registerCss(path) {
-    const link = document.createElement("link");
-    link.href = 'http://assets.example/markdown/' + path;
-    link.rel = 'stylesheet';
-    document.body.appendChild(link);
-    return link;
-  }
-
-  function registerJs(path) {
-    const script = document.createElement("script");
-    script.src = 'http://assets.example/markdown/' + path;
-    script.defer = true;
-    document.body.appendChild(script);
-    return script;
-  }
   function parseQuery(str) {
     return ` ${str}`
       .matchAll(/[\s](\w+)=['"](.*?)['"]/g)
@@ -176,7 +189,6 @@ window.viewPlugin = (() => {
       };
     }
     const data = context['qrcode'];
-
     data.seq = 0;
     data.entries.forEach(li => li.active = false);
 
@@ -205,7 +217,7 @@ window.viewPlugin = (() => {
 
       return new Promise(async (resolve, error) => {
         await data.loading
-        QRCode.toDataURL(qrcode.text, options, (err, value) => {
+        window.QRCode.toDataURL(qrcode.text, options, (err, value) => {
           if (err) {
             error(err);
             return;
@@ -226,11 +238,8 @@ window.viewPlugin = (() => {
       name: "qrcode",
       allowInline: true,
       setup: (config) => {
-        if (!data['loading']) {
-          data.loading = new Promise((resolve) => {
-            registerCss("qrcode.css");
-            registerJs('qrcode.js').onload = () => resolve();
-          });
+        if (!data.loading) {
+          data.loading = loadScripts(['markdown/qrcode.css', 'markdown/qrcode.js']);
         }
         const args = parseQuery(config);
         const qrcode = createQRCode(args);
@@ -265,16 +274,19 @@ window.viewPlugin = (() => {
   }
 
   function embedPano360() {
+    if (!context['pano360']) {
+      context['pano360'] = {
+      };
+    }
+    const data = context['pano360'];
     let panoIdSeq = 0;
+
     return {
       name: "pano360",
       allowInline: false,
       setup: (configFile) => {
-        if (!context['pano360.loader']) {
-          loader = Promise.withResolvers();
-          registerCss("pannellum.css");
-          registerJs('pannellum.js').onload = () => loader.resolve();
-          context['pano360.loader'] = loader.promise;
+        if (!data.loader) {
+          data.loader = loadScripts(['markdown/pannellum.css', 'markdown/pannellum.js']);
         }
 
         const panoramaId = ++panoIdSeq;
@@ -306,8 +318,9 @@ window.viewPlugin = (() => {
               }
             }
           }
-          await context['pano360.loader'];
+
           context[sceneId] = scene;
+          await data.loader;
           pannellum.viewer(`pano${panoramaId}`, config);
         });
 
@@ -429,6 +442,36 @@ window.viewPlugin = (() => {
     }, 50);
     context.trackFirstLineActive = true;
   }
+
+  async function loadScripts(scripts) {
+    const promises = scripts
+      .filter(li => !context.scripts.includes(li))
+      .map(path => {
+        context.scripts.push(path);
+        if (path.endsWith('.css')) {
+          const link = document.createElement("link");
+          link.href = 'http://assets.example/' + path;
+          link.rel = 'stylesheet';
+          document.head.appendChild(link);
+          return Promise.resolve();
+        }
+        else if (path.endsWith('.js')) {
+          const script = document.createElement("script");
+          script.src = 'http://assets.example/' + path;
+          script.defer = true;
+          return new Promise((resolve) => {
+            script.onload = () => resolve();
+             document.head.appendChild(script);
+          });
+        }
+        else {
+          return Promise.resolve();
+        }
+      });
+
+    await Promise.all(promises);
+  }
+
 
   return {
     setDocument,

@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Web.WebView2.Core;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using PanelCommon;
 using Webview2Viewer.Web;
 
@@ -120,6 +121,7 @@ namespace Webview2Viewer
       reload = reload || (_cssFile != cssFile);
       reload = reload || (_lineMark != lineMark);
       reload = reload || (_trackFirstLine != _settings.SyncViewWithFirstVisibleLine);
+      reload = reload || (_markdownPlugins != string.Join(",", _settings.AllowedMarkdownPlugins));
 
       if (_assetPath != assetsPath) {
         await ExecuteWebviewAction(() => {
@@ -138,6 +140,7 @@ namespace Webview2Viewer
         _cssFile = cssFile;
         _lineMark = lineMark;
         _trackFirstLine = _settings.SyncViewWithFirstVisibleLine;
+        _markdownPlugins = string.Join(",", _settings.AllowedMarkdownPlugins);
 
         var loader = File.ReadAllText(assetsPath + "/loader.html");
         cssFile = cssFile.Replace("\\", "/");
@@ -152,13 +155,18 @@ namespace Webview2Viewer
         }
 
         loader = loader.Replace("__BASE_URL__", HttpUtility2.PathToUri(baseDir));
-        loader = loader.Replace("__OPTIONS__", JsonConvert.SerializeObject(new {
-          document = "http://local.example" + fs.DocumentUri,
-          css = cssFile,
-          lineMark = (_settings.SyncViewWithFirstVisibleLine || _settings.SyncViewWithCaretPosition),
-          trackFirstLine = _settings.SyncViewWithFirstVisibleLine,
+        var options = new JObject {
+          ["document"] = "http://local.example" + fs.DocumentUri
+        };
 
-        }));
+        if (documentPath.EndsWith(".md")) {
+          options["css"] = cssFile;
+          options["lineMark"] = (_settings.SyncViewWithFirstVisibleLine || _settings.SyncViewWithCaretPosition);
+          options["trackFirstLine"] = _settings.SyncViewWithFirstVisibleLine;
+          options["md.extensions"] = JToken.FromObject(_settings.AllowedMarkdownPlugins);
+        }
+
+        loader = loader.Replace("__OPTIONS__", JsonConvert.SerializeObject(options));
 
         await ExecuteWebviewAction(() => _webView.NavigateToString(loader));
         await SetZoomLevel(_settings.ZoomLevel);
@@ -240,6 +248,8 @@ namespace Webview2Viewer
     private string _documentPath;
     private bool _lineMark;
     private bool _trackFirstLine;
+    private string _markdownPlugins;
+
     private List<IWebService> _webServices = new List<IWebService>();
     private IEventDispatcher _on;
   }

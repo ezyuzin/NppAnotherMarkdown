@@ -64,6 +64,11 @@ namespace AnotherMarkdown
       settings.SyncViewWithCaretPosition = (Win32.GetPrivateProfileInt("Options", "SyncViewWithCaretPosition", 0, _iniFilePath) != 0);
       settings.SyncViewWithFirstVisibleLine = (Win32.GetPrivateProfileInt("Options", "SyncWithFirstVisibleLine", 0, _iniFilePath) != 0);
 
+      settings.AllowedMarkdownPlugins = Win32.ReadIniValue("Options", "MarkdownPlugins", _iniFilePath, "tasks-list;attrs;qrcode;pano360")
+        .Split(';')
+        .Select(li => li.Trim())
+        .ToArray();
+
       settings.PreProcessorCommandFilename = Win32.ReadIniValue("Options", "PreProcessorExe", _iniFilePath, "");
       settings.PreProcessorArguments = Win32.ReadIniValue("Options", "PreProcessorArguments", _iniFilePath, "");
       settings.PostProcessorCommandFilename = Win32.ReadIniValue("Options", "PostProcessorExe", _iniFilePath, "");
@@ -208,6 +213,7 @@ namespace AnotherMarkdown
         _settings.ZoomLevel = settingsForm.ZoomLevel;
         _settings.ShowToolbar = settingsForm.ShowToolbar;
         _settings.ShowStatusbar = settingsForm.ShowStatusbar;
+        _settings.AllowedMarkdownPlugins = settingsForm.AllowedMarkdownPlugins;
 
         _settings.IsDarkModeEnabled = IsDarkModeEnabled();
         SaveSettings();
@@ -242,8 +248,10 @@ namespace AnotherMarkdown
 
       scintillaGateway.SetText(args.Content);
       scintillaGateway.GotoPos(pos);
+      var currentVisible = scintillaGateway.GetFirstVisibleLine();
+
       if (firstVisible != 0) {
-        scintillaGateway.LineScroll(0, firstVisible);
+        scintillaGateway.LineScroll(0, firstVisible - currentVisible);
       }
     }
 
@@ -336,7 +344,8 @@ namespace AnotherMarkdown
     {
       Win32.WritePrivateProfileString("Options", "SyncViewWithCaretPosition", _settings.SyncViewWithCaretPosition ? "1" : "0", _iniFilePath);
       Win32.WritePrivateProfileString("Options", "SyncWithFirstVisibleLine", _settings.SyncViewWithFirstVisibleLine ? "1" : "0", _iniFilePath);
-
+      Win32.WritePrivateProfileString("Options", "MarkdownPlugins", string.Join(";", _settings.AllowedMarkdownPlugins), _iniFilePath);
+      
       Win32.WriteIniValue("Options", "AssetsPath", _settings.AssetsPath, _iniFilePath);
       Win32.WriteIniValue("Options", "CssFileName", _settings.CssFileName, _iniFilePath);
       Win32.WriteIniValue("Options", "CssDarkModeFileName", _settings.CssDarkModeFileName, _iniFilePath);
@@ -549,7 +558,5 @@ namespace AnotherMarkdown
     private Bitmap _iconBmp;
     private bool _disposedValue;
     private DateTime _skipSyncEventsDue = DateTime.MinValue;
-
-    private EventDispatcher _on;
   }
 }
