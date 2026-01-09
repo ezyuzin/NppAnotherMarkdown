@@ -4,7 +4,7 @@
 
 Euler’s identity $e^{i\pi}+1=0$ is a beautiful formula in $\mathbb{R}^2$.
 
-$$ S = S_0 + V \cdot t + \frac {a \cdot t ^2} {2}$$
+$$ S = S_0 + V \cdot t + \frac {a \cdot t^2} {2}$$
 
 $$
 \frac {\partial^r} {\partial \omega^r} \left(\frac {y^{\omega}} {\omega}\right)

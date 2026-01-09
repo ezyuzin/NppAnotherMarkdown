@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Windows.Forms;
 using AnotherMarkdown.Entities;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace AnotherMarkdown.Forms
 {
@@ -48,9 +49,21 @@ namespace AnotherMarkdown.Forms
       cbShowToolbar.Checked = ShowToolbar;
       cbShowStatusbar.Checked = ShowStatusbar;
 
-      var plugins = JsonConvert.DeserializeObject<string[]>(File.ReadAllText(settings.DefaultAssetPath + "/markdown/md.extensions.json"));
+      var pluginConfig = File.ReadAllText(settings.DefaultAssetPath + "/markdown/md.extensions.json");
+      var plugins = JsonConvert.DeserializeObject<JObject>(pluginConfig)
+        .Properties()
+        .Select(li => {          
+          var plugin = li.Value.ToObject<MarkdownPlugin>();
+          plugin.Id = li.Name;
+          return plugin;
+        })
+        .OrderBy(li => li.Id)
+        .ToArray();
+
       MarkdownPlugins.Items.Clear();
-      plugins.OrderBy(li => li).ToList().ForEach(name => MarkdownPlugins.Items.Add(name, settings.AllowedMarkdownPlugins.Contains(name)));
+      foreach (var plugin in plugins) {
+        MarkdownPlugins.Items.Add(plugin, settings.EnabledMarkdownPlugins.Contains(plugin.Id));
+      }
     }
 
     private void trackBar1_ValueChanged(object sender, EventArgs e)
@@ -73,8 +86,8 @@ namespace AnotherMarkdown.Forms
     {
       if (string.IsNullOrEmpty(sblInvalidHtmlPath.Text)) {
         List<string> plugins = new List<string>();
-        foreach(var item in MarkdownPlugins.CheckedItems) {
-          plugins.Add((string) item);
+        foreach(MarkdownPlugin item in MarkdownPlugins.CheckedItems) {
+          plugins.Add(item.Id);
         }
         AllowedMarkdownPlugins = plugins.ToArray();
         DialogResult = DialogResult.OK;
@@ -158,6 +171,22 @@ namespace AnotherMarkdown.Forms
       }
       else {
         AssetsPath = "";
+      }
+    }
+
+    private class MarkdownPlugin
+    {
+      public string Id { get; set; }
+
+      [JsonProperty("title")]
+      public string Title { get; set; }
+
+      [JsonProperty("description")]
+      public string Description { get; set; }
+
+      public override string ToString()
+      {
+        return (!string.IsNullOrEmpty(Title)) ? Title : Id;
       }
     }
 

@@ -1,1 +1,27 @@
-['tasks-list', 'attrs', 'katex', 'qrcode', 'pano360']
+{
+  "tasks-list": {
+    "title": "TaskList",
+    "description": "",
+    "url": "https://mdit-plugins.github.io/tasklist.html",
+  },
+  "attrs": {
+    "title": "Attrs",
+    "description": '',
+    "url": "https://mdit-plugins.github.io/attrs.html",
+    "version": ""    
+  },
+  "katex": {
+    "title": "KaTeX: Math Expressions",
+    "description": "",
+    "url": "https://mdit-plugins.github.io/katex.html",
+    "version": ""  
+  },
+  "qrcode": {
+    title: "QRCode",
+    description: "``{% qrcode='12345' %}``"    
+  },
+  "pano360": {    
+    title: "Panoramic 360 Photo",
+    description: ""    
+  }
+}

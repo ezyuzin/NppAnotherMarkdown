@@ -13,6 +13,6 @@
     string DefaultCssFile { get; }
     string DefaultDarkModeCssFile { get; }
 
-    string[] AllowedMarkdownPlugins { get; }
+    string[] EnabledMarkdownPlugins { get; }
   }
 }

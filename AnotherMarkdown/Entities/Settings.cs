@@ -15,7 +15,7 @@ namespace AnotherMarkdown.Entities
     public bool ShowToolbar { get; set; }
     public bool ShowStatusbar { get; set; }
 
-    public string[] AllowedMarkdownPlugins { get; set; }
+    public string[] EnabledMarkdownPlugins { get; set; }
 
     public string PreProcessorCommandFilename { get; set; }
     public string PreProcessorArguments { get; set; }

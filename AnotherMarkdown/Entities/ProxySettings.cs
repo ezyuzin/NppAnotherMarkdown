@@ -23,7 +23,7 @@ namespace AnotherMarkdown.Entities
     public string DefaultAssetPath => _s.DefaultAssetPath;
     public string DefaultCssFile => _s.DefaultCssFile;
     public string DefaultDarkModeCssFile => _s.DefaultDarkModeCssFile;
-    public string[] AllowedMarkdownPlugins => _s.AllowedMarkdownPlugins;
+    public string[] EnabledMarkdownPlugins => _s.EnabledMarkdownPlugins;
 
     private readonly Settings _s;
   }

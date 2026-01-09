@@ -121,7 +121,7 @@ namespace Webview2Viewer
       reload = reload || (_cssFile != cssFile);
       reload = reload || (_lineMark != lineMark);
       reload = reload || (_trackFirstLine != _settings.SyncViewWithFirstVisibleLine);
-      reload = reload || (_markdownPlugins != string.Join(",", _settings.AllowedMarkdownPlugins));
+      reload = reload || (_enabledMarkdownPlugins != string.Join(",", _settings.EnabledMarkdownPlugins));
 
       if (_assetPath != assetsPath) {
         await ExecuteWebviewAction(() => {
@@ -140,7 +140,7 @@ namespace Webview2Viewer
         _cssFile = cssFile;
         _lineMark = lineMark;
         _trackFirstLine = _settings.SyncViewWithFirstVisibleLine;
-        _markdownPlugins = string.Join(",", _settings.AllowedMarkdownPlugins);
+        _enabledMarkdownPlugins = string.Join(",", _settings.EnabledMarkdownPlugins);
 
         var loader = File.ReadAllText(assetsPath + "/loader.html");
         cssFile = cssFile.Replace("\\", "/");
@@ -163,7 +163,7 @@ namespace Webview2Viewer
           options["css"] = cssFile;
           options["lineMark"] = (_settings.SyncViewWithFirstVisibleLine || _settings.SyncViewWithCaretPosition);
           options["trackFirstLine"] = _settings.SyncViewWithFirstVisibleLine;
-          options["md.extensions"] = JToken.FromObject(_settings.AllowedMarkdownPlugins);
+          options["md.extensions"] = JToken.FromObject(_settings.EnabledMarkdownPlugins);
         }
 
         loader = loader.Replace("__OPTIONS__", JsonConvert.SerializeObject(options));
@@ -248,7 +248,7 @@ namespace Webview2Viewer
     private string _documentPath;
     private bool _lineMark;
     private bool _trackFirstLine;
-    private string _markdownPlugins;
+    private string _enabledMarkdownPlugins;
 
     private List<IWebService> _webServices = new List<IWebService>();
     private IEventDispatcher _on;
