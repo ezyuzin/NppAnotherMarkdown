@@ -31,9 +31,36 @@ window.viewPlugin = (() => {
         "markdown/markdown-it-katex@0.24.1.min.js"
       ]);
     }
-    if (options["md.extensions"].includes("attrs")) {
+
+    if ([
+      "abbr",
+      "alert",
+      "align",
+      "attrs",
+      "container",
+      "demo",
+      "dl",
+      "figure",
+      "footnote",
+      "icon",
+      "imgLazyload",
+      "imgMark",
+      "imgSize",
+      "ins",
+      "mark",
+      "plantuml",
+      "ruby",
+      "spoiler",
+      "stylize",
+      "sub",
+      "sup",
+      "tab",
+      "uml",
+      "qrcode",
+      "pano360"
+    ].some(name => options["md.extensions"].includes(name))) {
       dependencies.push(...[
-        "markdown/markdown-it-attrs@4.1.0.js"
+        "markdown/markdown-it-plugin-pack.min.js"
       ]);
     }
     if (options["md.extensions"].includes("tasks-list")) {
@@ -44,11 +71,6 @@ window.viewPlugin = (() => {
     if (options["md.extensions"].includes("emoji")) {
       dependencies.push(...[
         "markdown/markdown-it-emoji@3.0.0.min.js"
-      ]);
-    }
-    if (["qrcode", "pano360"].some(li => options["md.extensions"].includes(li))) {
-      dependencies.push(...[
-        "markdown/markdown-it-embed.js"
       ]);
     }
 
@@ -94,7 +116,7 @@ window.viewPlugin = (() => {
       embed.push(embedPano360());
     }
     if (embed.length !== 0) {
-      md.use(window.markdownItEmbedd, { config: embed });
+      md.use(window.markdownItEmbed, { config: embed });
     }
     if (options["md.extensions"].includes("tasks-list")) {
       md.use(...markdownItTaskLists());
@@ -105,7 +127,73 @@ window.viewPlugin = (() => {
     if (options["md.extensions"].includes("emoji")) {
       md.use(window.markdownItEmoji, {});
     }
-    
+    if (options["md.extensions"].includes("abbr")) {
+      md.use(window.markdownItAbbr, {});
+    }
+    if (options["md.extensions"].includes("alert")) {
+      md.use(window.markdownItAlert, {});
+    }
+    if (options["md.extensions"].includes("align")) {
+      md.use(window.markdownItAlign, {});
+    }
+    if (options["md.extensions"].includes("container")) {
+      md.use(window.markdownItContainer, {});
+    }
+    if (options["md.extensions"].includes("demo")) {
+      md.use(window.markdownItDemo, {});
+    }
+    if (options["md.extensions"].includes("dl")) {
+      md.use(window.markdownItDl, {});
+    }
+    if (options["md.extensions"].includes("figure")) {
+      md.use(window.markdownItFigure, {});
+    }
+    if (options["md.extensions"].includes("footnote")) {
+      md.use(window.markdownItFootnote, {});
+    }
+    if (options["md.extensions"].includes("icon")) {
+      md.use(window.markdownItIcon, {});
+    }
+    if (options["md.extensions"].includes("imgLazyload")) {
+      md.use(window.markdownItImgLazyLoad, {});
+    }
+    if (options["md.extensions"].includes("ImgMark")) {
+      md.use(window.markdownItImgMark, {});
+    }
+    if (options["md.extensions"].includes("imgSize")) {
+      md.use(window.markdownItImgSize, {});
+    }
+    if (options["md.extensions"].includes("ins")) {
+      md.use(window.markdownItIns, {});
+    }
+    if (options["md.extensions"].includes("mark")) {
+      md.use(window.markdownItMark, {});
+    }
+    if (options["md.extensions"].includes("plantuml")) {
+      md.use(window.markdownItPlantUml, {});
+    }
+    if (options["md.extensions"].includes("ruby")) {
+      md.use(window.markdownItRuby, {});
+    }
+    if (options["md.extensions"].includes("spoiler")) {
+      md.use(window.markdownItSpoiler, {});
+    }
+    if (options["md.extensions"].includes("stylize")) {
+      md.use(window.markdownItStylize, {});
+    }
+    if (options["md.extensions"].includes("sub")) {
+      md.use(window.markdownItSub, {});
+    }
+    if (options["md.extensions"].includes("sup")) {
+      md.use(window.markdownItSup, {});
+    }
+    if (options["md.extensions"].includes("tab")) {
+      md.use(window.markdownItTab, {});
+    }
+    if (options["md.extensions"].includes("uml")) {
+      md.use(window.markdownItUml, {});
+    }
+
     if (options.lineMark) {
       md.use(window.markdownItLineMark);
     }

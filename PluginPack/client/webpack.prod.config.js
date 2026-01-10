@@ -9,6 +9,8 @@ module.exports = merge(baseConfig, {
     hints: false,
   },
   optimization: {
+    splitChunks: false,
+    runtimeChunk: false,
     minimize: true,
     minimizer: [
       new TerserPlugin({

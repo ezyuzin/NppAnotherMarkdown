@@ -1,33 +1,55 @@
 {
+  "abbr": {},
+  "alert": {},
+  "align": {},
+  "container": {},
+  "demo": {},
+  "dl": {},
+  "figure": {},
+  "footnote": {},
+  "icon": {},
+  "imgLazyload": {},
+  "imgMark": {},
+  "imgSize": {},
+  "ins": {},
+  "mark": {},
+  "plantuml": {},
+  "ruby": {},
+  "spoiler": {},
+  "stylize": {},
+  "sub": {},
+  "sup": {},
+  "tab": {},
+  "uml": {},
   "tasks-list": {
     "title": "TaskList",
     "description": "",
     "url": "https://mdit-plugins.github.io/tasklist.html",
   },
   "attrs": {
-    "title": "Attrs",
+    "title": "attrs",
     "description": '',
     "url": "https://mdit-plugins.github.io/attrs.html",
-    "version": ""    
+    "version": ""
   },
   "katex": {
     "title": "KaTeX: Math Expressions",
     "description": "",
     "url": "https://mdit-plugins.github.io/katex.html",
-    "version": ""  
+    "version": ""
   },
   "emoji": {
     "title": "Emoji",
     "description": "",
     "url": "https://github.com/markdown-it/markdown-it-emoji",
-    "version": ""  
+    "version": ""
   },
   "qrcode": {
     title: "QRCode",
-    description: "``{% qrcode='12345' %}``"    
+    description: "``{% qrcode='12345' %}``"
   },
-  "pano360": {    
+  "pano360": {
     title: "Panoramic 360 Photo",
-    description: ""    
+    description: ""
   }
 }
