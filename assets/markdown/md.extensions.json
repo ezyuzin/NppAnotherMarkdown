@@ -16,6 +16,12 @@
     "url": "https://mdit-plugins.github.io/katex.html",
     "version": ""  
   },
+  "emoji": {
+    "title": "Emoji",
+    "description": "",
+    "url": "https://github.com/markdown-it/markdown-it-emoji",
+    "version": ""  
+  },
   "qrcode": {
     title: "QRCode",
     description: "``{% qrcode='12345' %}``"    

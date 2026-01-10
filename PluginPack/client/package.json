@@ -8,12 +8,14 @@
     "@babel/core": "^7.24.7",
     "@babel/preset-env": "^7.24.7",
     "@babel/preset-typescript": "^7.24.7",
+    "@types/markdown-it-emoji": "^3.0.1",
     "babel-loader": "^9.1.2",
     "webpack-cli": "^6.0.1"
   },
   "dependencies": {
     "@mdit/plugin-katex": "^0.24.1",
-    "markdown-it": "^14.1.0"
+    "markdown-it": "^14.1.0",
+    "markdown-it-emoji": "^3.0.0"
   },
   "browserslist": {
     "production": [

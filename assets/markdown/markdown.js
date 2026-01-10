@@ -41,6 +41,11 @@ window.viewPlugin = (() => {
         "markdown/markdown-it-task-lists@2.1.0.js"
       ]);
     }
+    if (options["md.extensions"].includes("emoji")) {
+      dependencies.push(...[
+        "markdown/markdown-it-emoji@3.0.0.min.js"
+      ]);
+    }
     if (["qrcode", "pano360"].some(li => options["md.extensions"].includes(li))) {
       dependencies.push(...[
         "markdown/markdown-it-embed.js"
@@ -94,10 +99,13 @@ window.viewPlugin = (() => {
     if (options["md.extensions"].includes("tasks-list")) {
       md.use(...markdownItTaskLists());
     }
-     if (options["md.extensions"].includes("katex")) {
+    if (options["md.extensions"].includes("katex")) {
       md.use(window.markdownItKatex, {});
     }
-
+    if (options["md.extensions"].includes("emoji")) {
+      md.use(window.markdownItEmoji, {});
+    }
+    
     if (options.lineMark) {
       md.use(window.markdownItLineMark);
     }

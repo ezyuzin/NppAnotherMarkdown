@@ -4,7 +4,7 @@ const TerserPlugin = require('terser-webpack-plugin');
 const baseConfig = require('./webpack.config.js');
 
 module.exports = merge(baseConfig, {
-  devtool: 'source-map', // Generates .map files
+  devtool: 'source-map', // Generates .map files 
   performance: {
     hints: false,
   },
