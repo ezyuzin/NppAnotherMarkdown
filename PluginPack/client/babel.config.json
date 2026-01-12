@@ -1,0 +1,14 @@
+{
+  "plugins": [
+  ],  
+  "presets": [
+    "../node_modules/@babel/preset-typescript",
+    [
+      "../node_modules/@babel/preset-env", {
+        "targets": { "node": "22" },
+        "exclude": ["@babel/plugin-transform-async-to-generator"],
+        "useBuiltIns": false
+      }
+    ]
+  ]
+}

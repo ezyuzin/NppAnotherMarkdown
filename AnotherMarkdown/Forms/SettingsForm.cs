@@ -1,8 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Windows.Forms;
 using AnotherMarkdown.Entities;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace AnotherMarkdown.Forms
 {
@@ -14,6 +18,8 @@ namespace AnotherMarkdown.Forms
     public string CssDarkModeFileName { get; set; }
     public bool ShowToolbar { get; set; }
     public bool ShowStatusbar { get; set; }
+
+    public string[] AllowedMarkdownPlugins { get; set; }
 
     public SettingsForm(Settings settings)
     {
@@ -42,6 +48,22 @@ namespace AnotherMarkdown.Forms
       tbDarkmodeCssFile.Text = CssDarkModeFileName;
       cbShowToolbar.Checked = ShowToolbar;
       cbShowStatusbar.Checked = ShowStatusbar;
+
+      var pluginConfig = File.ReadAllText(settings.DefaultAssetPath + "/markdown/md.extensions.json");
+      var plugins = JsonConvert.DeserializeObject<JObject>(pluginConfig)
+        .Properties()
+        .Select(li => {          
+          var plugin = li.Value.ToObject<MarkdownPlugin>();
+          plugin.Id = li.Name;
+          return plugin;
+        })
+        .OrderBy(li => li.Id)
+        .ToArray();
+
+      MarkdownPlugins.Items.Clear();
+      foreach (var plugin in plugins) {
+        MarkdownPlugins.Items.Add(plugin, settings.EnabledMarkdownPlugins.Contains(plugin.Id));
+      }
     }
 
     private void trackBar1_ValueChanged(object sender, EventArgs e)
@@ -63,6 +85,11 @@ namespace AnotherMarkdown.Forms
     private void btnSave_Click(object sender, EventArgs e)
     {
       if (string.IsNullOrEmpty(sblInvalidHtmlPath.Text)) {
+        List<string> plugins = new List<string>();
+        foreach(MarkdownPlugin item in MarkdownPlugins.CheckedItems) {
+          plugins.Add(item.Id);
+        }
+        AllowedMarkdownPlugins = plugins.ToArray();
         DialogResult = DialogResult.OK;
       }
     }
@@ -144,6 +171,22 @@ namespace AnotherMarkdown.Forms
       }
       else {
         AssetsPath = "";
+      }
+    }
+
+    private class MarkdownPlugin
+    {
+      public string Id { get; set; }
+
+      [JsonProperty("title")]
+      public string Title { get; set; }
+
+      [JsonProperty("description")]
+      public string Description { get; set; }
+
+      public override string ToString()
+      {
+        return (!string.IsNullOrEmpty(Title)) ? Title : Id;
       }
     }
 

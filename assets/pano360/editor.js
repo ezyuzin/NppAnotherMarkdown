@@ -298,7 +298,7 @@ window.viewPlugin = (() => {
   }
 
   /** url: string */
-  const setDocument = async (container, options) => {
+  const setDocument = async (container, args) => {
     let options = {
       document: "",
       modified: false,

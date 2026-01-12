@@ -1,0 +1,23 @@
+{
+  "name": "markdown-plugins",
+  "private": true,
+  "workspaces": [
+    "client"
+  ],
+  "scripts": {
+    "build:katex": "webpack --config ./client/katex.webpack.config.js",
+    "build:emoji": "webpack --config ./client/emoji.webpack.config.js",
+    "build:pack": "webpack --config ./client/pack.webpack.config.js",
+    "build:all": "concurrently  \"yarn build:pack\" \"yarn build:katex\" \"yarn build:emoji\""
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "nodemon": "^3.1.10",
+    "terser-webpack-plugin": "^5.3.14",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.9.2",
+    "webpack": "^5.101.3",
+    "webpack-merge": "^6.0.1"
+  }
+}

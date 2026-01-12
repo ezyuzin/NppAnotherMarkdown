@@ -1,0 +1,28 @@
+{
+  "folders": [
+    {
+      "path": "."
+    }
+  ],
+  "settings": {
+    "typescript.tsdk": "node_modules\\typescript\\lib",
+    "workbench.editor.enablePreview": true,
+    "workbench.list.openMode": "doubleClick",
+    "git.enabled": false,
+    "explorer.compactFolders": false,
+    "typescript.preferences.importModuleSpecifier": "relative",
+
+    "files.exclude": {
+      "*.lock": true,
+      "*.yml": true,
+      ".yardopts": true,
+      "**/node_modules": true,
+      "**/yarn-error.log": true,
+      "**/.gitignore": true,
+      "**/yarn.lock": true
+    },
+    "files.associations": {
+      "*.json": "jsonc"
+    }
+  }
+}

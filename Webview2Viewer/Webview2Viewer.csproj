@@ -62,7 +62,6 @@
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="InterfaceProvider.cs" />
     <Compile Include="Web\HttpUtility2.cs" />
     <Compile Include="Web\IWebService.cs" />
     <Compile Include="Web\ApiService.cs" />

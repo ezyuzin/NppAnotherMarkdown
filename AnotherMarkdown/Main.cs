@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using Kbg.NppPluginNET.PluginInfrastructure;
 
 namespace AnotherMarkdown
@@ -28,8 +27,6 @@ namespace AnotherMarkdown
     internal static void PluginCleanUp()
     {
       mdpanel?.PluginCleanUp();
-      mdpanel?.Dispose();
-      mdpanel = null;
     }
 
     // PluginName is used as npp plugin's menu entry

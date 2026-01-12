@@ -1,0 +1,34 @@
+{
+  "editor.fontFamily": "JetBrains Mono NL",
+  "editor.fontLigatures": false,
+  "editor.fontSize": 15,
+  "editor.fontVariations": false,
+  "editor.fontWeight": "400",
+  "editor.lightbulb.enabled": "off",
+  "editor.lineHeight": 20,
+  "editor.selectionHighlight": false,
+  "editor.occurrencesHighlight": "off",
+  "files.exclude": {
+    "**/.git/": true,
+    "**/tsconfig.json": true,
+    "**/webpack.config.js": false,
+    "**/babel.config.json": true,
+    "**/package.json": true,
+
+    "node_modules/": true,
+    "out/": true,
+    "typings/": true,
+    "LICENSE": true,
+    "README.md": true
+  },
+
+  "javascript.updateImportsOnFileMove.enabled": "always",
+  "editor.wordWrapColumn": 120,
+  "editor.wrappingIndent": "indent",
+  "files.trimTrailingWhitespace": true,
+  "files.trimFinalNewlines": true,
+  "explorer.autoReveal": false,
+
+  "terminal.external.windowsExec": "C:\\Windows\\System32\\cmd.exe",
+  "workbench.tree.indent": 14,
+}

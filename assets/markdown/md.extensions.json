@@ -1,0 +1,80 @@
+{
+  "abbr": {
+    "title": "abbr: add <abbr> abbreviation tag support"
+  },
+  "alert": {
+    "title": "alert: GFM style alerts blocks"
+  },
+  "align": {
+    "title": "align: plugin to align contents"
+  },
+  "attrs": {
+    "title": "attrs: add attrs to Markdown content"
+  },
+  "container": {
+    "title": "container: Creating block-level custom containers"
+  },
+  "dl": {
+    "title": "dl: Definition lists"
+  },
+  "emoji": {
+    "title": "emoji: convert text Emoji to graphics symbols"
+  },
+  "figure": {
+    "title": "figure: generating figures with captions from images"
+  },
+  "footnote": {
+    "title": "footnote: footnotes"
+  },
+  "icon": {
+    "title": "icon: custom Icons"
+  },
+  "imgLazyload": {
+    "title": "imgLazyload: lazy loading for images"
+  },
+  "imgMark": {
+    "title": "imgMark: mark images by ID suffix for theme mode"
+  },
+  "imgSize": {
+    "title": "imgSize: support setting size for images"
+  },
+  "ins": {
+    "title": "ins: add <insert> tag support"
+  },
+  "katex": {
+    "title": "KaTeX: Math Expressions"
+  },
+  "mark": {
+    "title": "mark: mark and highlight contents"
+  },
+  "pano360": {
+    "title": "pano360: display panoramic 360 Photo"
+  },  
+  "plantuml": {
+    "title": "plantuml: support plant uml schemes"
+  },
+  "qrcode": {
+    "title": "qrcode: convert text to qrcode"
+  },
+  "ruby": {
+    "title": "ruby: add support <ruby> ruby annotation"
+  },
+  "spoiler": {
+    "title": "spoiler: plugin to hide content"
+  },
+  "stylize": {
+    "title": "stylize: plugin for stylizing tokens"
+  },
+  "sub": {
+    "title": "sub: plugin to support subscript"
+  },
+  "sup": {
+    "title": "sup: plugin to support superscript"
+  },
+  "tab": {
+    "title": "tab: block-level custom tabs"
+  },
+  "tasks-list": {
+    "title": "tasks-list: support tasklists with checkboxes"
+  }
+}

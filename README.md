@@ -7,21 +7,44 @@ A plugin for previewing Markdown files in Notepad++.
 
 The plugin is a fork of the [NppMarkdownPanel plugin](https://github.com/mohzy83/NppMarkdownPanel) and uses the [markdown-it](https://github.com/markdown-it/markdown-it) javascript library to render Markdown documents into HTML and allows configuring used Markdown extensions **without recompiling or reinstalling the plugin** (just edit `assets/markdown/markdown.js`).
 
-* Editing and preview interactive 360-degree panoramic photos into Markdown. Extension uses [panellum](https://github.com/mpetroff/pannellum) library and invokes with markdown markup syntax `{% pano360 path_to_scene %}`. Example can be found [here](https://github.com/ezyuzin/NppAnotherMarkdown/tree/master/example/pano).  
-  Open index.pano360.json in Notepad++ for editing, the AnotherMarkdown preview makes scene editing easier.
-  
-* Displaying QR codes
-`{% qrcode text="12345" %}`
+## Supported markdown extensions (out-of-box)
 
-![](example/pano/preview.gif)
+| Extension                                                      | Description                            |
+|----------------------------------------------------------------|----------------------------------------|
+| [abbr](https://mdit-plugins.github.io/abbr.html)               | Add abbreviation tag \<abbr> support   |
+| [alert](https://mdit-plugins.github.io/alert.html)             | GFM style alerts                       |
+| [align](https://mdit-plugins.github.io/align.html)             | Plugin to align contents               |
+| [attrs](https://mdit-plugins.github.io/attrs.html)             | Add attrs to Markdown content          |
+| [container](https://mdit-plugins.github.io/container.html)     | Creating block-level custom containers |
+| [dl](https://mdit-plugins.github.io/dl.html)                   | Definition list |
+| [emoji](https://github.com/markdown-it/markdown-it-emoji)      | Emoji |
+| [figure](https://mdit-plugins.github.io/figure.html)           | Generating figures with captions from images |
+| [footnote](https://mdit-plugins.github.io/footnote.html)       | Footnotes |
+| [icon](https://mdit-plugins.github.io/icon.html)               | Icons |
+| [imgLazyLoad](https://mdit-plugins.github.io/img-lazyload.html)| Lazy loading for images |
+| [imgMark](https://mdit-plugins.github.io/img-mark.html)        | Mark images by ID suffix for theme mode |
+| [imgSize](https://mdit-plugins.github.io/img-size.html)        | Add support setting size for images |
+| [ins](https://mdit-plugins.github.io/ins.html)                 | Аdd \<insert\> tag support |
+| [katex](https://mdit-plugins.github.io/katex.html)             | Math Expressions<br> ![](help/plugin-katex.jpg) |
+| [mark](https://mdit-plugins.github.io/mark.html)               | Mark and highlight contents |
+| [pano360]()                                                    | Editing and preview interactive 360-degree panoramic photos. It uses [panellum](https://github.com/mpetroff/pannellum) library and invokes with markdown markup syntax `{% pano360 path_to_scene %}`. Example can be found [here](./example/pano/index.md).<br/> Editing index.pano360.json in Notepad++ allow interactive add hotspots and transition between photos, makes scene editing easier.|
+| [plantuml](https://mdit-plugins.github.io/plantuml.html)       | Add support plant uml schemes |
+| [ruby](https://mdit-plugins.github.io/ruby.html)               | Ruby annotation \<ruby\> |
+| [qrcode]()                                                     | Display QRCode from string `{% qrcode text="ABC" %}` |
+| [spoiler](https://mdit-plugins.github.io/spoiler.html)         | Plugin for hide content |
+| [stylize](https://mdit-plugins.github.io/stylize.html)         | Plugin for stylizing tokens |
+| [sub](https://mdit-plugins.github.io/sub.html)                 | Plugin to support subscript |
+| [sup](https://mdit-plugins.github.io/sup.html)                 | Plugin to support superscript |
+| [tab](https://mdit-plugins.github.io/tab.html)                 | Block-level custom tabs |
 
 
-### Current Version
+### Latest Version
 
-The current version can be found [here](https://github.com/ezyuzin/NppAnotherMarkdown/releases)
+The latest version can be found [here](https://github.com/ezyuzin/NppAnotherMarkdown/releases).
 
-{% qrcode text="https://github.com/ezyuzin/NppAnotherMarkdown/releases" %}
+### ChangeLog
 
+Differences between versions can be found [here](./CHANGELOG.md).
 
 ## Prerequisites
 - Windows

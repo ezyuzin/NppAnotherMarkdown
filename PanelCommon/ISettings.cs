@@ -1,6 +1,5 @@
 ﻿namespace PanelCommon
 {
-
   public interface ISettings
   {
     bool SyncViewWithCaretPosition { get; }
@@ -13,5 +12,7 @@
     string DefaultAssetPath { get; }
     string DefaultCssFile { get; }
     string DefaultDarkModeCssFile { get; }
+
+    string[] EnabledMarkdownPlugins { get; }
   }
 }

@@ -46,7 +46,7 @@
       }
     }
   }
-  console.log(`unsupported file extension: ${source}`);
+  console.log(`unsupported file extension: ${options.document}`);
   return {
     scrollToLine: () => { },
     documentChanged: () => { },

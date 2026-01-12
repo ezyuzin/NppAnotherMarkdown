@@ -2,9 +2,9 @@ name: Build AnotherMarkdown
 
 on:
   push:
-    branches: [ master ]
+    branches: [release]
   pull_request:
-    branches: [ master, dev ]
+    branches: []
   workflow_dispatch:
 
 jobs:

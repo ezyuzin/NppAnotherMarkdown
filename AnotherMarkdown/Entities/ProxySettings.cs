@@ -1,4 +1,5 @@
-﻿using PanelCommon;
+﻿using System;
+using PanelCommon;
 
 namespace AnotherMarkdown.Entities
 {
@@ -22,6 +23,7 @@ namespace AnotherMarkdown.Entities
     public string DefaultAssetPath => _s.DefaultAssetPath;
     public string DefaultCssFile => _s.DefaultCssFile;
     public string DefaultDarkModeCssFile => _s.DefaultDarkModeCssFile;
+    public string[] EnabledMarkdownPlugins => _s.EnabledMarkdownPlugins;
 
     private readonly Settings _s;
   }

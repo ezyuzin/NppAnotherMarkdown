@@ -59,25 +59,41 @@ namespace AnotherMarkdown.Forms
       statusStrip2.Visible = settings.ShowStatusbar;
     }
 
-
     public void RenderMarkdown(string currentText, string filepath)
     {
-      if ((_renderTask == null || _renderTask.IsCompleted)) {
+      lock (_renderTaskLock) {
+        _markdownContent = new MarkdownContent {
+          Path = filepath,
+          Text = currentText,
+        };
 
-        var context = TaskScheduler.FromCurrentSynchronizationContext();
-        _renderTask = new Task(async () => {
-          try {
-
-            await _webviewInitTask;
-            if (_webView != null) {
-              await _webView.SetContent(currentText, filepath);
-            }
-          }
-          catch (Exception) { }
-        });
-        _renderTask.Start(context);
+        if (_renderTask == null) {
+          _renderTask = RenderMarkdownTask();
+        }
       }
     }
+
+    private async Task RenderMarkdownTask()
+    {
+      try {
+        await _webviewInitTask;
+        while (true) {
+          await Task.Delay(20);
+          MarkdownContent content;
+          lock (_renderTaskLock) {
+            if (_markdownContent == null) {
+              _renderTask = null;
+              break;
+            }
+            content = _markdownContent.Value;
+            _markdownContent = null;
+          }
+          await _webView.SetContent(content.Text, content.Path);
+        }
+      }
+      catch (Exception) { }
+    }
+
 
     public void ScrollToElementWithLineNo(int lineNo)
     {
@@ -92,7 +108,16 @@ namespace AnotherMarkdown.Forms
       base.WndProc(ref m);
     }
 
+    private struct MarkdownContent
+    {
+      public string Text;
+      public string Path;
+    }
+
     private Task _webviewInitTask;
+    private MarkdownContent? _markdownContent;
+
+    private object _renderTaskLock = new object();
     private Task _renderTask;
     private Settings _settings;
     private Webview2WebbrowserControl _webView;
