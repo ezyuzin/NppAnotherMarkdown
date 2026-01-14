@@ -20,6 +20,7 @@ The plugin is a fork of the [NppMarkdownPanel plugin](https://github.com/mohzy83
 | [emoji](https://github.com/markdown-it/markdown-it-emoji)      | Emoji |
 | [figure](https://mdit-plugins.github.io/figure.html)           | Generating figures with captions from images |
 | [footnote](https://mdit-plugins.github.io/footnote.html)       | Footnotes |
+| [highlight.js](https://github.com/highlightjs/highlight.js)    | Code syntax highlight |
 | [icon](https://mdit-plugins.github.io/icon.html)               | Icons |
 | [imgLazyLoad](https://mdit-plugins.github.io/img-lazyload.html)| Lazy loading for images |
 | [imgMark](https://mdit-plugins.github.io/img-mark.html)        | Mark images by ID suffix for theme mode |

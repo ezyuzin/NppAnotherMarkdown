@@ -12,4 +12,3 @@ foreach($msbuild in $msbuildPaths) {
 }
 
 & $msbuild AnotherMarkdown.sln /target:Clean /target:Build /p:Configuration=Debug /p:Platform=x86
-& $msbuild AnotherMarkdown.sln /target:Clean /target:Build /p:Configuration=Debug /p:Platform=x64

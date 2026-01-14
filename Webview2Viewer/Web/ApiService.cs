@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using Microsoft.Web.WebView2.Core;
 using Newtonsoft.Json;
 using PanelCommon;
@@ -19,7 +20,75 @@ namespace Webview2Viewer.Web
       Hostname = host;
       _on = eventDispatcher;
       _methods.Add(new ApiMethod { Method = "POST", Path = "/webevent", Handler = PostWebEvent });
+      _methods.Add(new ApiMethod { Method = "POST", Path = "/paste-image", Handler = PasteImage });
     }
+
+    private CoreWebView2WebResourceResponse PasteImage(CoreWebView2WebResourceRequest request)
+    {
+      if (_on.PasteImage != null) {
+        string contentType = request.Headers
+          .FirstOrDefault(h => h.Key.Equals("Content-Type", StringComparison.OrdinalIgnoreCase))
+          .Value;
+
+        var boundary = contentType
+          .Split(';')
+          .Select(x => x.Trim())
+          .First(x => x.StartsWith("boundary="))
+          .Substring("boundary=".Length);
+
+        byte[] body;
+        using (var ms = new MemoryStream()) {
+          request.Content.CopyTo(ms);
+          body = ms.ToArray();
+        }
+        var pasteImage = GetPasteImage(body, boundary);
+        if (pasteImage != null) {
+          _on.PasteImage(this, pasteImage.Value);
+        }
+      }
+      return NoContent();
+    }
+
+    private PasteImage? GetPasteImage(byte[] body, string boundary)
+    {
+      var boundaryBytes = Encoding.ASCII.GetBytes("--" + boundary);
+      var headerEnd = Encoding.ASCII.GetBytes("\r\n\r\n");
+
+      int start = IndexOf(body, boundaryBytes, 0);
+      if (start < 0)
+        return null;
+
+      int headersStart = start + boundaryBytes.Length + 2; // \r\n
+      int headersEnd = IndexOf(body, headerEnd, headersStart);
+      if (headersEnd < 0)
+        return null;
+
+      string headers = Encoding.UTF8.GetString(body, headersStart, headersEnd - headersStart);
+
+      var fileName = Regex.Match(headers, @"filename=""(.+?)""").Groups[1].Value;
+      if (string.IsNullOrEmpty(fileName)) {
+        fileName = Guid.NewGuid() + ".png";
+      }
+
+      int dataStart = headersEnd + headerEnd.Length;
+      int dataEnd = IndexOf(body, boundaryBytes, dataStart) - 2; // \r\n
+      if (dataEnd - dataStart == 0) {
+        return null;
+      }
+
+      var content = new byte[dataEnd - dataStart];
+      Buffer.BlockCopy(body, dataStart, content, 0, content.Length);
+
+      var base64 = Encoding.ASCII.GetString(content);
+      var commaIndex = base64.IndexOf(',');
+      if (commaIndex >= 0) {
+        base64 = base64.Substring(commaIndex + 1);
+      }
+      byte[] imageBytes = Convert.FromBase64String(base64);
+
+      return new PasteImage { Filename = fileName, Content = imageBytes };
+    }
+
     private CoreWebView2WebResourceResponse PostWebEvent(CoreWebView2WebResourceRequest request)
     {
       string requestBody;
@@ -108,6 +177,22 @@ namespace Webview2Viewer.Web
         "Access-Control-Allow-Origin: *"
       });
       return _httpEnvironment.CreateWebResourceResponse(new MemoryStream(), 204, "OK", string.Join("\r\n", headers));
+    }
+
+    private static int IndexOf(byte[] src, byte[] pattern, int start)
+    {
+      for (int i = start; i <= src.Length - pattern.Length; i++) {
+        bool match = true;
+        for (int j = 0; j < pattern.Length; j++) {
+          if (src[i + j] != pattern[j]) {
+            match = false;
+            break;
+          }
+        }
+        if (match)
+          return i;
+      }
+      return -1;
     }
 
     private class ApiMethod

@@ -597,28 +597,3 @@ pre code, pre tt {
 .contains-task-list {
   padding-left: 5px;
 }
-
-.task-list-item {
-  display: flex;
-  list-style-type: none;
-  align-items: flex-start;
-}
-
-input.task-list-item-checkbox {
-  display: inline-block;
-  margin-top: 2px;
-}
-
-input.task-list-item-checkbox:disabled {
-  color: black;
-}
-
-p.end {
-  text-indent: 0em;
-  margin-bottom: 15px;
-}
-
-.linemark {
-  vertical-align: top;
-  display: inline-block;
-}

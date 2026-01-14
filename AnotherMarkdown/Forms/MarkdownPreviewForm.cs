@@ -11,38 +11,31 @@ namespace AnotherMarkdown.Forms
   {
     public EventDispatcher OnEvent { get; set; }
 
-    public static MarkdownPreviewForm InitViewer(Settings settings, ActionRef<Message> wndProcCallback)
-    {
+    public static MarkdownPreviewForm Create(Settings settings, ActionRef<Message> wndProcCallback) { 
       return new MarkdownPreviewForm(settings, wndProcCallback);
     }
 
     private MarkdownPreviewForm(Settings settings, ActionRef<Message> wndProcCallback)
     {
+      _wndProcCallback = wndProcCallback;
+      OnEvent = new EventDispatcher();
       InitializeComponent();
 
-      OnEvent = new EventDispatcher();
-      _wndProcCallback = wndProcCallback;
-      _settings = settings;
+      var webView = new Webview2WebbrowserControl();
+      webView.Initialize(new ProxySettings(settings), OnEvent);
 
-      var webview = new Webview2WebbrowserControl();
-      webview.StatusTextChangedAction = (status) => {
+      panel1.Controls.Clear();
+      webView.AddToHost(panel1);
+      panel1.Visible = true;
+
+      webView.StatusTextChangedAction = (status) => {
         toolStripStatusLabel1.Text = status;
       };
-
-      _webviewInitTask = webview
-        .InitializeAsync(new ProxySettings(_settings), OnEvent)
-        .ContinueWith(t => {
-          panel1.Controls.Clear();
-          webview.AddToHost(panel1);
-          panel1.Visible = true;
-          _webView = webview;
-        });
+      _webView = webView;
     }
 
     public void UpdateSettings(Settings settings)
     {
-      _settings = settings;
-
       var isDarkModeEnabled = settings.IsDarkModeEnabled;
       if (isDarkModeEnabled) {
         tbPreview.BackColor = Color.Black;
@@ -67,7 +60,7 @@ namespace AnotherMarkdown.Forms
           Text = currentText,
         };
 
-        if (_renderTask == null) {
+        if (_renderTask == null || (_renderTask.IsCompleted || _renderTask.IsFaulted)) {
           _renderTask = RenderMarkdownTask();
         }
       }
@@ -76,7 +69,6 @@ namespace AnotherMarkdown.Forms
     private async Task RenderMarkdownTask()
     {
       try {
-        await _webviewInitTask;
         while (true) {
           await Task.Delay(20);
           MarkdownContent content;
@@ -88,10 +80,13 @@ namespace AnotherMarkdown.Forms
             content = _markdownContent.Value;
             _markdownContent = null;
           }
-          await _webView.SetContent(content.Text, content.Path);
+          
+          await _webView.SetContentAsync(content.Text, content.Path);
         }
       }
-      catch (Exception) { }
+      catch (Exception err) {
+        Console.WriteLine(err);
+      }
     }
 
 
@@ -114,12 +109,10 @@ namespace AnotherMarkdown.Forms
       public string Path;
     }
 
-    private Task _webviewInitTask;
     private MarkdownContent? _markdownContent;
 
     private object _renderTaskLock = new object();
     private Task _renderTask;
-    private Settings _settings;
     private Webview2WebbrowserControl _webView;
     private ActionRef<Message> _wndProcCallback;
   }
