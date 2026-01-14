@@ -13,7 +13,7 @@
     "**/tsconfig.json": true,
     "**/webpack.config.js": false,
     "**/babel.config.json": true,
-    "**/package.json": true,
+    "**/package.json": false,
 
     "node_modules/": true,
     "out/": true,

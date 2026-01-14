@@ -338,6 +338,14 @@ namespace Kbg.NppPluginNET.PluginInfrastructure
       SB_BOTH = 3
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct NMHDR
+    {
+      public IntPtr hwndFrom;
+      public IntPtr idFrom;
+      public int code;
+    }
+
     public const int MAX_PATH = 260;
     public const int MF_BYCOMMAND = 0;
     public const int MF_CHECKED = 8;
@@ -346,6 +354,8 @@ namespace Kbg.NppPluginNET.PluginInfrastructure
     public const int MF_GRAYED = 1;
     public const int MF_DISABLED = 2;
     public const int WM_CREATE = 1;
+    public const int WM_NOTIFY = 0x004E;
+
     public const int GWL_EXSTYLE = -20;
     public const int GWLP_HINSTANCE = -6;
     public const int GWLP_HWNDPARENT = -8;

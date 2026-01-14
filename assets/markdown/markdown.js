@@ -12,6 +12,7 @@ window.viewPlugin = (() => {
       modified: false,
       lineMark: false,
       trackFirstLine: false,
+      pageYOffset: null,
       "md.extensions": []
     }
     options = { ...options, ...args };
@@ -21,6 +22,7 @@ window.viewPlugin = (() => {
 
     const dependencies = [
       "detect-charset.js",
+      "markdown/editor.css",
       "markdown/markdown-it@14.1.0.min.js",
       "markdown/markdown-it-linemark.js"
     ]
@@ -29,6 +31,12 @@ window.viewPlugin = (() => {
       dependencies.push(...[
         "markdown/plugin-katex/katex@0.24.1.min.css",
         "markdown/markdown-it-katex@0.24.1.min.js"
+      ]);
+    }
+    if (options["md.extensions"].includes("highlightjs")) {
+      dependencies.push(...[
+        "markdown/plugin-higlightjs/github.min.css",
+        "markdown/markdown-it-hilightjs@11.11.1.min.js"
       ]);
     }
 
@@ -109,14 +117,26 @@ window.viewPlugin = (() => {
     context.documentReady = renderCompleted.promise;
     context.postRender = [];
 
-    const md = window.markdownit({
+    const markdownItOptions = {
       html: true
-    });
+    }
+    if (options["md.extensions"].includes("highlightjs")) {
+      markdownItOptions['highlight'] = function (str, lang) {
+        const hljs = window.markdownItHighlightJs;
+        if (lang && hljs.getLanguage(lang)) {
+          try {
+            return hljs.highlight(str, { language: lang }).value;
+          }
+          catch (err) {}
+        }
+        return ''; // use external default escaping
+      }
+    }
 
+    const md = window.markdownit(markdownItOptions);
     if (options["md.extensions"].includes("attrs")) {
       md.use(window.markdownItAttrs);
     }
-
     const embed = [];
     if (options["md.extensions"].includes("qrcode")) {
       embed.push(embedQrCode());
@@ -133,6 +153,7 @@ window.viewPlugin = (() => {
     if (options["md.extensions"].includes("katex")) {
       md.use(window.markdownItKatex, {});
     }
+
     if (options["md.extensions"].includes("emoji")) {
       md.use(window.markdownItEmoji, {});
     }
@@ -211,7 +232,6 @@ window.viewPlugin = (() => {
       context.postRender = [];
     }
     renderCompleted.resolve();
-
     container.querySelectorAll("script").forEach((oldScript) => {
       const newScript = document.createElement("script");
       if (oldScript.src) {
@@ -222,6 +242,68 @@ window.viewPlugin = (() => {
       document.head.appendChild(newScript);
       document.head.removeChild(newScript);
     });
+
+    initDragAndDrop(container);
+    insertOrUpdateSpacer();
+
+    if (options.pageYOffset && options.pageYOffset !== 0) {
+      (async() => {
+
+        await new Promise((resolve) => setTimeout(() => resolve(), 100));
+        await waitForImages();
+        setDelayScrollToLine();
+        window.scrollTo({ top: options.pageYOffset })
+
+        await waitForDocumentStable();
+        setDelayScrollToLine();
+        window.scrollTo({ top: options.pageYOffset })
+      })();
+    }
+  }
+
+  function waitForDocumentStable(timeout = 60) {
+    return new Promise(resolve => {
+      let observer;
+      let timer;
+
+      const debouncedResolve = () => {
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          observer.disconnect(); // останавливаем наблюдение
+          resolve();
+        }, timeout);
+      };
+
+      observer = new MutationObserver(debouncedResolve);
+      observer.observe(document.body, {
+        childList: true,    // добавление/удаление элементов
+        subtree: true,      // следить во всём DOM
+        attributes: true,   // изменения атрибутов
+        characterData: true // изменения текста
+      });
+
+      // стартовый таймер на случай, если изменений нет
+      timer = setTimeout(() => {
+        observer.disconnect();
+        resolve();
+      }, timeout);
+    });
+  }
+
+  function waitForImages(timeout = 5000) {
+    const images = Array.from(document.images);
+    const promises = images.map(img => {
+      if (img.complete) return Promise.resolve();
+      return new Promise(resolve => {
+        const onLoadOrError = () => { resolve(); img.removeEventListener('load', onLoadOrError); img.removeEventListener('error', onLoadOrError); };
+        img.addEventListener('load', onLoadOrError);
+        img.addEventListener('error', onLoadOrError);
+      });
+    });
+    return Promise.race([
+      Promise.all(promises),
+      new Promise(resolve => setTimeout(resolve, timeout))
+    ]);
   }
 
   function parseQuery(str) {
@@ -400,30 +482,35 @@ window.viewPlugin = (() => {
         }
 
         context.postRender.push(async() => {
-          const config = await (await fetch(configFile)).json();
-          config.default.basePath = (configFile.match(/^(.*)(\/)[^\/]*$/))[1] + "/";
+          try {
+            const config = await (await fetch(configFile)).json();
+            config.default.basePath = (configFile.match(/^(.*)(\/)[^\/]*$/))[1] + "/";
 
-          const scene = {
-            elementId: `pano${panoramaId}`,
-            configText: JSON.stringify(config)
-          }
+            const scene = {
+              elementId: `pano${panoramaId}`,
+              configText: JSON.stringify(config)
+            }
 
-          if (context[sceneId]) {
-            if (context[sceneId].div && context[sceneId].configText === scene.configText) {
-              const element = document.getElementById(scene.elementId);
-              if (element) {
-                const parentElement = element.parentElement;
-                parentElement.removeChild(element);
-                parentElement.appendChild(context[sceneId].div);
-                delete context[sceneId].div;
-                return;
+            if (context[sceneId]) {
+              if (context[sceneId].div && context[sceneId].configText === scene.configText) {
+                const element = document.getElementById(scene.elementId);
+                if (element) {
+                  const parentElement = element.parentElement;
+                  parentElement.removeChild(element);
+                  parentElement.appendChild(context[sceneId].div);
+                  delete context[sceneId].div;
+                  return;
+                }
               }
             }
-          }
 
-          context[sceneId] = scene;
-          await data.loader;
-          pannellum.viewer(`pano${panoramaId}`, config);
+            context[sceneId] = scene;
+            await data.loader;
+            pannellum.viewer(`pano${panoramaId}`, config);
+          }
+          catch(err) {
+            console.error({ err });
+          }
         });
 
         return `
@@ -433,11 +520,16 @@ window.viewPlugin = (() => {
       }
     }
   }
+
+  function setDelayScrollToLine() {
+    clearTimeout(context.scrollToLineTimeoutId)
+    context.scrollToLineTimeoutId = setTimeout(() => context.trackFirstLineActive = false, 1500);
+  }
+
   function scrollToLine(line) {
     if (line === 0) {
       context.trackFirstLineActive = true;
-      clearTimeout(context.scrollToLineTimeoutId)
-      context.scrollToLineTimeoutId = setTimeout(() => context.trackFirstLineActive = false, 1500);
+      setDelayScrollToLine();
 
       window.scrollTo({
         top: 0,
@@ -458,36 +550,35 @@ window.viewPlugin = (() => {
       }
     }
 
-    var spacer = document.getElementById('spacer');
-    var rect = element.getBoundingClientRect();
+    const rect = element.getBoundingClientRect();
+    const requiredScrollTop = rect.top + window.pageYOffset;
 
-    var elementTop = rect.top + window.pageYOffset;
-    var requiredScrollTop = elementTop;
-    var maxScrollTop = document.documentElement.scrollHeight - window.innerHeight;
-    if (requiredScrollTop > maxScrollTop) {
-      var extraHeight = requiredScrollTop - maxScrollTop;
-      if (!spacer) {
-        spacer = document.createElement('div');
-        spacer.id = 'spacer';
-        spacer.style.height = extraHeight + 'px';
-        spacer.style.width = '1px';
-        spacer.style.pointerEvents = 'none';
-        document.body.appendChild(spacer);
-      }
-      else {
-        var spacerRect = spacer.getBoundingClientRect();
-        spacer.style.height = extraHeight + spacerRect.height + 'px';
-      }
-    }
-
+    insertOrUpdateSpacer();
     context.trackFirstLineActive = true;
-    clearTimeout(context.scrollToLineTimeoutId);
-    context.scrollToLineTimeoutId = setTimeout(() => context.trackFirstLineActive = false, 1500);
+    setDelayScrollToLine();
 
     window.scrollTo({
       top: requiredScrollTop,
       behavior: 'smooth'
     });
+  }
+
+  async function insertOrUpdateSpacer() {
+    var spacer = document.getElementById('spacer');
+    if (!spacer) {
+      spacer = document.createElement('div');
+      spacer.id = 'spacer';
+      spacer.style.height = window.innerHeight + 'px';
+      spacer.style.width = '1px';
+      spacer.style.pointerEvents = 'none';
+      document.body.appendChild(spacer);
+    }
+    else {
+      const height = window.innerHeight + 'px';
+      if (spacer.style.height !== height) {
+        spacer.style.height = height;
+      }
+    }
   }
 
   async function sendWebEvent(name, payload) {
@@ -574,6 +665,69 @@ window.viewPlugin = (() => {
     await Promise.all(promises);
   }
 
+  function initDragAndDrop(dropzone) {
+    if (context['initDragAndDrop'] === true) {
+      return;
+    }
+
+    dropzone = document.body;
+
+    context['initDragAndDrop'] = true;
+
+    async function apiPasteImage(file) {
+      var fetchResult = Promise.withResolvers();
+      const reader = new FileReader();
+      reader.onload = async(ev) => {
+        try {
+          const blob = new Blob([ev.target.result], { type: file.type });
+          const fd = new FormData();
+          fd.append("image", blob, "./img/" + file.name);
+          await fetch('http://api.example/paste-image', { method: "POST", body: fd });
+          fetchResult.resolve();
+        }
+        catch(err) {
+          fetchResult.reject(err);
+        }
+      };
+      reader.readAsDataURL(file);
+      await fetchResult.promise;
+    }
+
+    ["dragenter", "dragover", "dragleave", "drop"].forEach(eventName => {
+      dropzone.addEventListener(eventName, e => e.preventDefault());
+    });
+
+    dropzone.addEventListener("dragover", () => {
+      dropzone.classList.add("dragover");
+    });
+
+    dropzone.addEventListener("dragleave", () => {
+      dropzone.classList.remove("dragover");
+    });
+    dropzone.addEventListener("drop", async (e) => {
+      dropzone.classList.remove("dragover");
+      const files = [...e.dataTransfer.files];
+      for(const file of files) {
+        if (file.type.startsWith("image/")) {
+          await apiPasteImage(file);
+        }
+      }
+    });
+
+    document.addEventListener("paste", async (e) => {
+      const entries = e.clipboardData?.items ?? [];
+      e.preventDefault();
+      for(const entry of entries) {
+        if (entry.type.startsWith("image/")) {
+          e.preventDefault();
+          const file = entry.getAsFile();
+          if (file) {
+            await apiPasteImage(file);
+          }
+        }
+      }
+    });
+  }
 
   return {
     setDocument,

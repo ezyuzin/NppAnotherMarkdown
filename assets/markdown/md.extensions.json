@@ -20,6 +20,9 @@
   "emoji": {
     "title": "emoji: convert text Emoji to graphics symbols"
   },
+  "highlightjs": {
+    "title": "highlight.js: code syntax highlight"
+  },  
   "figure": {
     "title": "figure: generating figures with captions from images"
   },

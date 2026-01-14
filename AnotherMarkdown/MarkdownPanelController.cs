@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,9 +26,17 @@ namespace AnotherMarkdown
         if (_previewForm == null) {
           lock (_lock) {
             if (_previewForm == null) {
-              _previewForm = MarkdownPreviewForm.InitViewer(_settings, HandleWndProc);
-              _previewForm.OnEvent.DocumentChanged += (_, e) => DocumentChanged(e);
-              _previewForm.OnEvent.TrackFirstLine += (_, e) => FirstLineChanged(e);
+              try {
+                _previewForm = MarkdownPreviewForm.Create(_settings);
+                _previewForm.OnEvent.DocumentChanged += (_, e) => DocumentChanged(e);
+                _previewForm.OnEvent.TrackFirstLine += (_, e) => FirstLineChanged(e);
+                _previewForm.OnEvent.PasteImage += (_, e) => PasteImage(e);
+                _previewForm.OnEvent.Navigate += (_, e) => OpenFile(e);
+                _previewForm.DockClosed += (_, e) => TogglePanelVisible();
+              }
+              catch (Exception ex) {
+                Console.WriteLine(ex.ToString());
+              }
             }
           }
         }
@@ -38,7 +47,6 @@ namespace AnotherMarkdown
     public MarkdownPanelController()
     {
       AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
-
       scintillaGatewayFactory = PluginBase.GetGatewayFactory();
       _nppGateway = new NotepadPPGateway();
       SetIniFilePath();
@@ -111,16 +119,7 @@ namespace AnotherMarkdown
             }
           }
           else if (IsPanelVisible && _settings.SyncViewWithFirstVisibleLine) {
-            var scintillaGateway = scintillaGatewayFactory();
-            var currentPos = scintillaGateway.GetFirstVisibleLine();
-
-            if (_currentFirstVisibleLine != currentPos) {
-              _currentFirstVisibleLine = currentPos;
-              if (_skipSyncEventsDue < DateTime.UtcNow) {
-                var docLine = scintillaGateway.DocLineFromVisible(currentPos);
-                ScrollToElementAtLineNo(docLine);
-              }
-            }
+            _ = SyncWithFirstVisibleLineTask();
           }
           break;
         }
@@ -143,6 +142,21 @@ namespace AnotherMarkdown
         case (uint) SciMsg.SCN_MODIFIED: {
           RenderMarkdownDeferred();
           break;
+        }
+      }
+    }
+
+    private async Task SyncWithFirstVisibleLineTask()
+    {
+      await Task.Delay(50);
+      var scintillaGateway = scintillaGatewayFactory();
+      var currentPos = scintillaGateway.GetFirstVisibleLine();
+
+      if (_currentFirstVisibleLine != currentPos) {
+        _currentFirstVisibleLine = currentPos;
+        if (_skipSyncEventsDue < DateTime.UtcNow) {
+          var docLine = scintillaGateway.DocLineFromVisible(currentPos);
+          ScrollToElementAtLineNo(docLine);
         }
       }
     }
@@ -173,7 +187,8 @@ namespace AnotherMarkdown
     private void RenderMarkdownDirect()
     {
       if (IsPanelVisible) {
-        PreviewForm.RenderMarkdown(GetCurrentEditorText(), _nppGateway.GetCurrentFilePath());
+        _currentFile = _nppGateway.GetCurrentFilePath();
+        PreviewForm.RenderMarkdown(GetCurrentEditorText(), _currentFile);
       }
     }
 
@@ -185,8 +200,12 @@ namespace AnotherMarkdown
 
     private void ScrollToElementAtLineNo(int lineNo)
     {
+
       if (IsPanelVisible) {
-        PreviewForm.ScrollToElementWithLineNo(lineNo);
+        var currentFile = _nppGateway.GetCurrentFilePath();
+        if (currentFile == _currentFile) {
+          PreviewForm.ScrollToElementWithLineNo(lineNo);
+        }
       }
     }
 
@@ -223,6 +242,64 @@ namespace AnotherMarkdown
           RenderMarkdownDirect();
         }
       }
+    }
+
+    private void OpenFile(NavigateTo args)
+    {
+      if (!File.Exists(args.Filename)) {
+        return;      
+      }
+      Win32.SendMessage(PluginBase.nppData._nppHandle, (uint) NppMsg.NPPM_DOOPEN, 0, args.Filename);
+    }
+
+    private void PasteImage(PasteImage args)
+    {
+      var path = _nppGateway.GetCurrentFilePath();
+      var rootDir = Path.GetDirectoryName(path);
+      var targetDir = Path.Combine(rootDir, Path.GetDirectoryName(args.Filename));
+
+      if (!Directory.Exists(targetDir)) {
+        Directory.CreateDirectory(targetDir);
+      }
+
+      var extension = Path.GetExtension(args.Filename).ToLower().Substring(1);
+      var sameFiles = Directory.GetFiles(targetDir, $"*.{extension}", SearchOption.TopDirectoryOnly);
+      string filename = null;
+
+      if (sameFiles.Length != 0) {
+        using (var md5 = MD5.Create()) {
+          var hash2 = string.Join("", md5.ComputeHash(args.Content).Select(li => $"{li}:X2"));
+          foreach (var file in sameFiles) {
+            var hash1 = string.Join("", md5.ComputeHash(File.ReadAllBytes(file)).Select(li => $"{li}:X2"));
+            if (hash1 == hash2) {
+              filename = file;
+              break;
+            }
+          }
+        }
+      }
+
+      if (filename == null) {
+        var index = 10;
+        while (true) {
+          var fname = $"{index:D3}";
+          if (Directory.GetFiles(targetDir, $"{fname}.*", SearchOption.TopDirectoryOnly).Length == 0) {
+            break;
+          }
+          index += 5;
+        }
+
+        filename = (targetDir + $"/{index:D3}.{extension}").Replace("\\", "/");
+        File.WriteAllBytes(filename, args.Content);
+      }
+
+      Uri rootUri = new Uri(rootDir + Path.DirectorySeparatorChar);
+      Uri fileUri = new Uri(filename);
+      var relativePath = rootUri.MakeRelativeUri(fileUri).ToString();
+
+      var scintillaGateway = scintillaGatewayFactory();
+      var pos = scintillaGateway.GetCurrentPos();
+      scintillaGateway.InsertText(pos, $"![](./{relativePath})\r\n");
     }
 
     private void FirstLineChanged(FirstLineChanged args)
@@ -410,74 +487,11 @@ namespace AnotherMarkdown
       return _icon;
     }
 
-    /// <summary>
-    /// Actions to do after the tool window was closed
-    /// </summary>
-    private void ToolWindowCloseAction()
-    {
-      TogglePanelVisible();
-    }
-
     private bool IsDarkModeEnabled()
     {
       // NPPM_ISDARKMODEENABLED (NPPMSG + 107)
       IntPtr ret = Win32.SendMessage(PluginBase.nppData._nppHandle, (uint)(Constants.NPPMSG + 107), UNUSED, UNUSED);
       return ret.ToInt32() == 1;
-    }
-
-    protected void HandleWndProc(ref Message m)
-    {
-      if (_disposedValue) {
-        return;
-      }
-
-      switch (m.Msg) {
-        case (int)WindowsMessage.WM_NOTIFY:
-          var notify = (NMHDR)Marshal.PtrToStructure(m.LParam, typeof(NMHDR));
-
-          // do not intercept Npp notifications like DMN_CLOSE, etc.
-          if (notify.hwndFrom != PluginBase.nppData._nppHandle) {
-            PreviewForm.Invalidate(true);
-            if (Environment.Is64BitProcess) {
-              SetControlParent(PreviewForm, Win32.GetWindowLongPtr, Win32.SetWindowLongPtr);
-            }
-            else {
-              SetControlParent(PreviewForm, Win32.GetWindowLong, Win32.SetWindowLong);
-            }
-
-            PreviewForm.Update();
-            return;
-          }
-
-          switch (notify.code) {
-            case (int) DockMgrMsg.DMN_CLOSE: {
-              ToolWindowCloseAction();
-              break;
-            }
-          }
-          break;
-      }
-    }
-
-    /// <summary>
-    /// Sets the <see cref="Win32.WS_EX_CONTROLPARENT"/> extended attribute on <paramref name="parent"/> and any child
-    /// controls, following @mahee96's advice on the archived Plugin.Net issue tracker. <para><seealso
-    /// href="https://github.com/kbilsted/NotepadPlusPlusPluginPack.Net/issues/17#issuecomment-683455467"/></para>
-    /// </summary>
-    /// <param name="parent">
-    /// A WinForm that's been registered with Npp's Docking Manager by sending <see cref="NppMsg.NPPM_DMMREGASDCKDLG"/>.
-    /// </param>
-    private void SetControlParent(Control parent, Func<IntPtr, int, IntPtr> wndLongGetter, Func<IntPtr, int, IntPtr, IntPtr> wndLongSetter)
-    {
-      if (parent.HasChildren) {
-        long extAttrs = (long)wndLongGetter(parent.Handle, Win32.GWL_EXSTYLE);
-        if (Win32.WS_EX_CONTROLPARENT != (extAttrs & Win32.WS_EX_CONTROLPARENT)) {
-          wndLongSetter(parent.Handle, Win32.GWL_EXSTYLE, new IntPtr(extAttrs | Win32.WS_EX_CONTROLPARENT));
-        }
-        foreach (Control c in parent.Controls) {
-          SetControlParent(c, wndLongGetter, wndLongSetter);
-        }
-      }
     }
 
     protected virtual void Dispose(bool disposing)
@@ -519,20 +533,6 @@ namespace AnotherMarkdown
       GC.SuppressFinalize(this);
     }
 
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct NMHDR
-    {
-      public IntPtr hwndFrom;
-      public IntPtr idFrom;
-      public int code;
-    }
-
-    public enum WindowsMessage
-    {
-      WM_NOTIFY = 0x004E
-    }
-
     private bool IsPanelVisible { get; set; }
 
     private const int UNUSED = 0;
@@ -558,5 +558,6 @@ namespace AnotherMarkdown
     private Bitmap _iconBmp;
     private bool _disposedValue;
     private DateTime _skipSyncEventsDue = DateTime.MinValue;
+    private string _currentFile;
   }
 }

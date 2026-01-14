@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Drawing;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using AnotherMarkdown.Entities;
+using Kbg.NppPluginNET.PluginInfrastructure;
 using Webview2Viewer;
 
 namespace AnotherMarkdown.Forms
@@ -11,38 +13,32 @@ namespace AnotherMarkdown.Forms
   {
     public EventDispatcher OnEvent { get; set; }
 
-    public static MarkdownPreviewForm InitViewer(Settings settings, ActionRef<Message> wndProcCallback)
-    {
-      return new MarkdownPreviewForm(settings, wndProcCallback);
+    public EventHandler DockClosed { get; set; }
+
+    public static MarkdownPreviewForm Create(Settings settings) { 
+      return new MarkdownPreviewForm(settings);
     }
 
-    private MarkdownPreviewForm(Settings settings, ActionRef<Message> wndProcCallback)
+    private MarkdownPreviewForm(Settings settings)
     {
+      OnEvent = new EventDispatcher();
       InitializeComponent();
 
-      OnEvent = new EventDispatcher();
-      _wndProcCallback = wndProcCallback;
-      _settings = settings;
+      var webView = new Webview2WebbrowserControl();
+      webView.Initialize(new ProxySettings(settings), OnEvent);
 
-      var webview = new Webview2WebbrowserControl();
-      webview.StatusTextChangedAction = (status) => {
+      panel1.Controls.Clear();
+      webView.AddToHost(panel1);
+      panel1.Visible = true;
+
+      webView.StatusTextChangedAction = (status) => {
         toolStripStatusLabel1.Text = status;
       };
-
-      _webviewInitTask = webview
-        .InitializeAsync(new ProxySettings(_settings), OnEvent)
-        .ContinueWith(t => {
-          panel1.Controls.Clear();
-          webview.AddToHost(panel1);
-          panel1.Visible = true;
-          _webView = webview;
-        });
+      _webView = webView;
     }
 
     public void UpdateSettings(Settings settings)
     {
-      _settings = settings;
-
       var isDarkModeEnabled = settings.IsDarkModeEnabled;
       if (isDarkModeEnabled) {
         tbPreview.BackColor = Color.Black;
@@ -67,7 +63,7 @@ namespace AnotherMarkdown.Forms
           Text = currentText,
         };
 
-        if (_renderTask == null) {
+        if (_renderTask == null || (_renderTask.IsCompleted || _renderTask.IsFaulted)) {
           _renderTask = RenderMarkdownTask();
         }
       }
@@ -76,7 +72,6 @@ namespace AnotherMarkdown.Forms
     private async Task RenderMarkdownTask()
     {
       try {
-        await _webviewInitTask;
         while (true) {
           await Task.Delay(20);
           MarkdownContent content;
@@ -88,10 +83,13 @@ namespace AnotherMarkdown.Forms
             content = _markdownContent.Value;
             _markdownContent = null;
           }
-          await _webView.SetContent(content.Text, content.Path);
+          
+          await _webView.SetContentAsync(content.Text, content.Path);
         }
       }
-      catch (Exception) { }
+      catch (Exception err) {
+        Console.WriteLine(err);
+      }
     }
 
 
@@ -104,8 +102,55 @@ namespace AnotherMarkdown.Forms
 
     protected override void WndProc(ref Message m)
     {
-      _wndProcCallback(ref m);
+      if (m.Msg == Win32.WM_NOTIFY) {
+        var nmdr = (Win32.NMHDR) Marshal.PtrToStructure(m.LParam, typeof(Win32.NMHDR));
+        if (nmdr.hwndFrom == PluginBase.nppData._nppHandle) {
+          switch ((DockMgrMsg) (nmdr.code & 0xFFFFU)) {
+            case DockMgrMsg.DMN_DOCK: {
+              break;
+            }
+            case DockMgrMsg.DMN_FLOAT: {
+              RemoveControlParent(this);
+              break;
+            }
+            case DockMgrMsg.DMN_CLOSE: {
+              DockClosed?.Invoke(this, EventArgs.Empty);
+              break;
+            }
+          }
+        }
+      }
       base.WndProc(ref m);
+    }
+
+    /// <summary>
+    /// Sets the <see cref="Win32.WS_EX_CONTROLPARENT"/> extended attribute on <paramref name="parent"/> and any child
+    /// controls, following @mahee96's advice on the archived Plugin.Net issue tracker. 
+    /// <para><seealso href="https://github.com/kbilsted/NotepadPlusPlusPluginPack.Net/issues/17#issuecomment-683455467"/></para>
+    /// <para><seealso href="https://github.com/mohzy83/NppMarkdownPanel/issues/106"/></para>
+    /// <para><seealso href="https://github.com/BdR76/CSVLint/pull/88"/></para>
+    /// </summary>
+    /// <param name="parent">
+    /// A WinForm that's been registered with Npp's Docking Manager by sending <see cref="NppMsg.NPPM_DMMREGASDCKDLG"/>.
+    /// </param>
+    private void RemoveControlParent(Control parent)
+    {
+      if (parent.HasChildren) {
+        long extAttrs = (Environment.Is64BitProcess)
+          ? (long) Win32.GetWindowLongPtr(parent.Handle, Win32.GWL_EXSTYLE)
+          : (long) Win32.GetWindowLong(parent.Handle, Win32.GWL_EXSTYLE);
+
+        if (Win32.WS_EX_CONTROLPARENT == (extAttrs & Win32.WS_EX_CONTROLPARENT)) {
+          var newAttrs = new IntPtr(extAttrs & ~Win32.WS_EX_CONTROLPARENT);
+
+          _ = (Environment.Is64BitProcess)
+            ? (long) Win32.SetWindowLongPtr(parent.Handle, Win32.GWL_EXSTYLE, newAttrs)
+            : (long) Win32.SetWindowLong(parent.Handle, Win32.GWL_EXSTYLE, newAttrs);
+        }
+        foreach (Control c in parent.Controls) {
+          RemoveControlParent(c);
+        }
+      }
     }
 
     private struct MarkdownContent
@@ -114,13 +159,10 @@ namespace AnotherMarkdown.Forms
       public string Path;
     }
 
-    private Task _webviewInitTask;
     private MarkdownContent? _markdownContent;
 
     private object _renderTaskLock = new object();
     private Task _renderTask;
-    private Settings _settings;
     private Webview2WebbrowserControl _webView;
-    private ActionRef<Message> _wndProcCallback;
   }
 }

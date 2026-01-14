@@ -1,4 +1,17 @@
 ## Version History
+
+### NppAnotherMarkdown 0.1.6 (released 2026-01-14)
+
+- Support drag-and-drop and CTRL+V insert images into markdown preview.  
+Markup `![](image path)` inserted into current cursor position. 
+Image naming is starts from 010.ext and incrementing with step 5, ie 010.jpg 015.jpg, 020.jpg, and each image stored in folder "./img" where markdown document located.  
+Location can be changed by edit [assets/markdown/markdown.js]().
+
+- Added navigation over existing Markdown files when clicking a link to such a file in the preview window; previous behavior: such navigation was ignored.
+- Preserve preview position after switch between documents
+- highlight.js: code syntax highlight plugin added. Enable it via settings  
+![](help/plugin-highlight.jpg)
+
 ### NppAnotherMarkdown 0.1.5 (released 2026-01-12)
 * Markdown Plugin Pack added
 
@@ -35,6 +48,7 @@
 
 ### NppAnotherMarkdown 0.1.3 (released 2026-01-06)
 * Editable tasklists, (bi-direction sync)
+
 Fixes:
 - [x] fix: reduce flickering panorama during text editing
 - [x] fix: another attempt to make more accurate positioning in the viewer when changing the caret position or the first line  

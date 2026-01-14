@@ -8,7 +8,8 @@
     "build:katex": "webpack --config ./client/katex.webpack.config.js",
     "build:emoji": "webpack --config ./client/emoji.webpack.config.js",
     "build:pack": "webpack --config ./client/pack.webpack.config.js",
-    "build:all": "concurrently  \"yarn build:pack\" \"yarn build:katex\" \"yarn build:emoji\""
+    "build:highlightjs": "webpack --config ./client/highlightjs.webpack.config.js",
+    "build:all": "concurrently \"yarn build:highlightjs\"  \"yarn build:pack\" \"yarn build:katex\" \"yarn build:emoji\""
   },
   "dependencies": {},
   "devDependencies": {
