@@ -1,6 +1,6 @@
 ## Version History
 
-### NppAnotherMarkdown 0.1.6 (released 2026-01-14)
+### NppAnotherMarkdown 0.1.6 (released 2026-01-15)
 
 - Support drag-and-drop and CTRL+V insert images into markdown preview.  
 Markup `![](image path)` inserted into current cursor position. 
