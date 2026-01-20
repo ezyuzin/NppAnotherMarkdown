@@ -1,5 +1,11 @@
 ## Version History
 
+### NppAnotherMarkdown 0.1.7 (released 2026-01-20)
+
+* rewrite all client-side code from plain JavaScript to TypeScript
+* panoramic image add ability to display it without scene definition
+* fix: reduce text flickering in the main editor window when synchronizing checklist checkboxes
+
 ### NppAnotherMarkdown 0.1.6 (released 2026-01-15)
 
 - Support drag-and-drop and CTRL+V insert images into markdown preview.  
@@ -43,7 +49,7 @@ Location can be changed by edit [assets/markdown/markdown.js]().
 
 
 ### NppAnotherMarkdown 0.1.4 (released 2026-01-08)
-* Syncing view for both window (text and markdown preview) when "Sync with first visible line" enabled.
+* Syncing view for both window (text and markdown preview) when "Sync with first visible line" enabled.  
 ![](example/sync-both.gif)
 
 ### NppAnotherMarkdown 0.1.3 (released 2026-01-06)

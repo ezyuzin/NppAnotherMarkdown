@@ -39,6 +39,7 @@
   "exclude": ["./dist", "./es", "./node_modules", "**/.bak", "**/_bak", "*.bak", "*.d.ts"],
   "references": [],
   "include": [
+    "src/types.d/",
     "src/",
   ],
   "ts-node": {

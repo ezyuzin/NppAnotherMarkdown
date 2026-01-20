@@ -9,6 +9,7 @@
     "@babel/preset-env": "^7.24.7",
     "@babel/preset-typescript": "^7.24.7",
     "@types/markdown-it-emoji": "^3.0.1",
+    "@types/qrcode": "^1.5.6",
     "babel-loader": "^9.1.2",
     "webpack-cli": "^6.0.1"
   },
@@ -42,9 +43,11 @@
     "@mdit/plugin-tab": "^0.23.0",
     "@mdit/plugin-tex": "^0.23.0",
     "@mdit/plugin-uml": "^0.23.0",
+    "detect-charset": "^0.1.0",
     "highlight.js": "^11.11.1",
     "markdown-it": "^14.1.0",
-    "markdown-it-emoji": "^3.0.0"
+    "markdown-it-emoji": "^3.0.0",
+    "qrcode": "^1.5.4"
   },
   "browserslist": {
     "production": [

@@ -1,5 +1,8 @@
-pwsh ./build-debug-x64.ps1
+@REM pwsh ./build-debug-x64.ps1
 
-xcopy AnotherMarkdown\bin\Debug-x64\AnotherMarkdown.* "C:\Program Files\Notepad++\plugins\AnotherMarkdown" /c /s /r /d /y /i
-xcopy Webview2Viewer\bin\Debug\*.* "c:\Program Files\Notepad++\plugins\AnotherMarkdown\lib" /c /s /r /d /y /i
-xcopy PanelCommon\bin\Debug\*.* "c:\Program Files\Notepad++\plugins\AnotherMarkdown\lib" /c /s /r /d /y /i
+SET PLUGIN_DIR=C:\Program Files\Notepad++\plugins\AnotherMarkdown
+
+xcopy AnotherMarkdown\bin\Debug-x64\* "%PLUGIN_DIR%\lib" /c /s /r /d /y /i
+xcopy "%PLUGIN_DIR%\lib\AnotherMarkdown.*" "%PLUGIN_DIR%\" /c /s /r /d /y /i
+del "%PLUGIN_DIR%\lib\AnotherMarkdown.*"
+PAUSE

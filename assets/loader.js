@@ -7,7 +7,7 @@
   options = { ...options, ...args };
 
   const plugins = [
-    [/\.(md)$/i, 'http://assets.example/markdown/markdown.js', options.css],
+    [/\.(md)$/i, 'http://assets.example/markdown/markdown.min.js', options.css],
     [/\.pano360\.(json)$/i, 'http://assets.example/pano360/editor.js', null]
   ]
 
