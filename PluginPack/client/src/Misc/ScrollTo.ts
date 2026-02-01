@@ -1,32 +1,21 @@
-import { setDelayTrackFirstLine } from "./TrackFirstLine";
-
-
+import { scrollToY } from "./SynvView";
 
 export async function ScrollToPageY(pageYOffset: number) {
-  setDelayTrackFirstLine();
-  window.scrollTo({ top: pageYOffset });
+  await scrollToY(pageYOffset);
 
   await WaitForImages();
-  setDelayTrackFirstLine();
-  window.scrollTo({ top: pageYOffset })
+  await scrollToY(pageYOffset);
 
   await WaitForDocumentStable();
-  setDelayTrackFirstLine();
-  window.scrollTo({ top: pageYOffset })
+  await scrollToY(pageYOffset);
 
   await new Promise<void>((resolve) => setTimeout(() => resolve(), 100));
-  setDelayTrackFirstLine();
-  window.scrollTo({ top: pageYOffset })
+  await scrollToY(pageYOffset);
 }
 
 export function ScrollToLine(line: number) {
   if (line === 0) {
-    setDelayTrackFirstLine();
-
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
+    scrollToY(0)
     return;
   }
 
@@ -46,12 +35,7 @@ export function ScrollToLine(line: number) {
   const requiredScrollTop = rect.top + window.pageYOffset;
 
   InitBottomSpacer();
-  setDelayTrackFirstLine();
-
-  window.scrollTo({
-    top: requiredScrollTop,
-    behavior: 'smooth'
-  });
+  scrollToY(requiredScrollTop);
 }
 
 export function InitBottomSpacer() {

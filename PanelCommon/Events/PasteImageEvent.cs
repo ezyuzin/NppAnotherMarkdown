@@ -1,6 +1,6 @@
 ﻿namespace PanelCommon
 {
-  public struct PasteImage
+  public struct PasteImageEvent
   {
     public string Filename;
     public byte[] Content;

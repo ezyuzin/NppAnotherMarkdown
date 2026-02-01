@@ -1,6 +1,6 @@
 ﻿namespace PanelCommon
 {
-  public struct NavigateTo
+  public struct NavigateToEvent
   {
     public string Filename;
   }

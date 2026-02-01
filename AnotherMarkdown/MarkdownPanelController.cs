@@ -7,7 +7,6 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using AnotherMarkdown.Entities;
@@ -30,7 +29,7 @@ namespace AnotherMarkdown
               try {
                 _previewForm = MarkdownPreviewForm.Create(_settings);
                 _previewForm.OnEvent.DocumentChanged += (_, e) => DocumentChanged(e);
-                _previewForm.OnEvent.TrackFirstLine += (_, e) => FirstLineChanged(e);
+                _previewForm.OnEvent.FirstLineChanged += (_, e) => FirstLineChanged(e);
                 _previewForm.OnEvent.PasteImage += (_, e) => PasteImage(e);
                 _previewForm.OnEvent.Navigate += (_, e) => OpenFile(e);
                 _previewForm.DockClosed += (_, e) => TogglePanelVisible();
@@ -45,7 +44,6 @@ namespace AnotherMarkdown
       }
     }
     private bool SyncViewEnabled => (_settings.SyncViewWithCaretPosition || _settings.SyncViewWithFirstVisibleLine);
-    private bool IsPanelVisible { get; set; }
 
     public MarkdownPanelController()
     {
@@ -110,104 +108,80 @@ namespace AnotherMarkdown
 
       switch (notification.Header.Code) {
         case (uint) SciMsg.SCN_UPDATEUI: {
-          if (IsPanelVisible && _settings.SyncViewWithCaretPosition) {
-            var scintillaGateway = scintillaGatewayFactory();
-            var currentPos = scintillaGateway.GetCurrentLineNumber();
-            if (_lastCaretPosition != currentPos) {
-              _lastCaretPosition = currentPos;
-              if (_skipSyncEventsDue < DateTime.UtcNow) {
-                ScrollToElementAtLineNo(_lastCaretPosition);
+          if (_isPanelVisible && (_settings.SyncViewWithCaretPosition || _settings.SyncViewWithFirstVisibleLine)) {
+            lock (_syncViewLock) {
+              _syncViewPending = true;
+              if (_syncViewTask == null || (_syncViewTask.IsCompleted || _syncViewTask.IsFaulted)) {
+                _syncViewTask = SyncViewTask();
               }
             }
-          }
-          else if (IsPanelVisible && _settings.SyncViewWithFirstVisibleLine) {
-            _ = SyncWithFirstVisibleLineTask();
           }
           break;
         }
         case (uint) NppMsg.NPPN_BUFFERACTIVATED: {
           if (_skipSyncEventsDue < DateTime.UtcNow) {
-            RenderMarkdownDirect();
+            RenderMarkdown(force: true);
           }
           break;
         }
         case (uint) (NppMsg.NPPN_FIRST + 27): {
-          // NPPN_DARKMODECHANGED (NPPN_FIRST + 27) // To notify plugins that Dark Mode was enabled/disabled
-
           _settings.IsDarkModeEnabled = IsDarkModeEnabled();
-          if (IsPanelVisible) {
+          if (_isPanelVisible) {
             PreviewForm.UpdateSettings(_settings);
-            RenderMarkdownDirect();
+            RenderMarkdown(force: true);
           }
           break;
         }
         case (uint) SciMsg.SCN_MODIFIED: {
           if (_skipSyncEventsDue < DateTime.UtcNow) {
-            RenderMarkdownDeferred();
+            RenderMarkdown();
           }
           break;
         }
       }
     }
 
-    private async Task SyncWithFirstVisibleLineTask()
+    private async Task SyncViewTask()
     {
-      await Task.Delay(50);
-      var scintillaGateway = scintillaGatewayFactory();
-      var currentPos = scintillaGateway.GetFirstVisibleLine();
-
-      if (_currentFirstVisibleLine != currentPos) {
-        _currentFirstVisibleLine = currentPos;
-        if (_skipSyncEventsDue < DateTime.UtcNow) {
-          var docLine = scintillaGateway.DocLineFromVisible(currentPos);
-          ScrollToElementAtLineNo(docLine);
+      while(_isPanelVisible) {
+        await Task.Delay(50);
+        if (_disposedValue || !_isPanelVisible) {
+          return;
         }
-      }
-    }
-
-    private void RenderMarkdownDeferred()
-    {
-      lock (_renderDeferredLock) {
-        if (_renderDeferredTask != null && !_renderDeferredTask.IsCompleted) {
-          var task = _renderDeferredTask;
-          var cts = _renderDeferredCancellationSource;
-          cts.Cancel();
-          task.ContinueWith(t => cts.Dispose());
+        if ((_settings.SyncViewWithFirstVisibleLine || _settings.SyncViewWithCaretPosition) == false) {
+          return;
         }
-        _renderDeferredCancellationSource = new CancellationTokenSource();
-        _renderDeferredTask = RenderDeferredWorkerAsync(_renderDeferredCancellationSource.Token);
-      }
-    }
 
-    private async Task RenderDeferredWorkerAsync(CancellationToken cancellationToken)
-    {
-      await Task.Delay(InputUpdateThreshold, cancellationToken);
-      try {
-        RenderMarkdownDirect();
-      }
-      catch { }
-    }
+        lock (_syncViewLock) {
+          if (!_syncViewPending) {
+            return;
+          }
+          _syncViewPending = false;
+        }
 
-    private void RenderMarkdownDirect()
-    {
-      if (IsPanelVisible) {
-        _currentFile = _nppGateway.GetCurrentFilePath();
-        PreviewForm.RenderMarkdown(GetCurrentEditorText(), _currentFile);
-      }
-    }
-
-    private string GetCurrentEditorText()
-    {
-      var scintillaGateway = scintillaGatewayFactory();
-      return scintillaGateway.GetText(scintillaGateway.GetLength() + 1);
-    }
-
-    private void ScrollToElementAtLineNo(int lineNo)
-    {
-      if (IsPanelVisible) {
         var currentFile = _nppGateway.GetCurrentFilePath();
-        if (currentFile == _currentFile) {
-          PreviewForm.ScrollToElementWithLineNo(lineNo);
+        if (currentFile != _currentFile) {
+          _lastScrollToLine = -1;
+        }
+
+        int nLine = -1;
+        var scintillaGateway = scintillaGatewayFactory();
+
+        if (_settings.SyncViewWithFirstVisibleLine) {
+          nLine = scintillaGateway.GetFirstVisibleLine();
+          nLine = scintillaGateway.DocLineFromVisible(nLine);
+        }
+        else if (_settings.SyncViewWithCaretPosition) {
+          nLine = scintillaGateway.GetCurrentLineNumber();
+        }
+
+        if (nLine == -1 || nLine == _lastScrollToLine) {
+          return;
+        }
+
+        _lastScrollToLine = nLine;
+        if (_skipSyncEventsDue < DateTime.UtcNow) {
+          await PreviewForm.ScrollToElementWithLineNo(nLine);
         }
       }
     }
@@ -240,14 +214,14 @@ namespace AnotherMarkdown
         _settings.IsDarkModeEnabled = IsDarkModeEnabled();
         SaveSettings();
         //Update Preview
-        if (IsPanelVisible) {
+        if (_isPanelVisible) {
           PreviewForm.UpdateSettings(_settings);
-          RenderMarkdownDirect();
+          RenderMarkdown(force: true);
         }
       }
     }
 
-    private void OpenFile(NavigateTo args)
+    private void OpenFile(NavigateToEvent args)
     {
       if (!File.Exists(args.Filename)) {
         return;
@@ -255,7 +229,7 @@ namespace AnotherMarkdown
       Win32.SendMessage(PluginBase.nppData._nppHandle, (uint) NppMsg.NPPM_DOOPEN, 0, args.Filename);
     }
 
-    private void PasteImage(PasteImage args)
+    private void PasteImage(PasteImageEvent args)
     {
       var path = _nppGateway.GetCurrentFilePath();
       var rootDir = Path.GetDirectoryName(path);
@@ -305,7 +279,7 @@ namespace AnotherMarkdown
       scintillaGateway.InsertText(pos, $"![](./{relativePath})\r\n");
     }
 
-    private void FirstLineChanged(FirstLineChanged args)
+    private void FirstLineChanged(FirstLineChangedEvent args)
     {
       var scintillaGateway = scintillaGatewayFactory();
       var visibleLine = scintillaGateway.GetFirstVisibleLine();
@@ -318,7 +292,7 @@ namespace AnotherMarkdown
       }
     }
 
-    private void DocumentChanged(DocumentContentChanged args)
+    private void DocumentChanged(DocumentChangedEvent args)
     {
       var scintillaGateway = scintillaGatewayFactory();
 
@@ -372,11 +346,10 @@ namespace AnotherMarkdown
       var currentPluginPath = PluginUtils.GetPluginDirectory();
       var helpFile = Path.Combine(currentPluginPath, "README.md");
       Win32.SendMessage(PluginBase.nppData._nppHandle, (uint) NppMsg.NPPM_DOOPEN, 0, helpFile);
-      if (!IsPanelVisible) {
+      if (!_isPanelVisible) {
         TogglePanelVisible();
       }
-
-      RenderMarkdownDirect();
+      RenderMarkdown(force: true);
     }
 
     private void SetIniFilePath()
@@ -396,7 +369,7 @@ namespace AnotherMarkdown
       var wasSyncView = SyncViewEnabled;
       SetSyncViewWithCaretPosition(!_settings.SyncViewWithCaretPosition);
       if (SyncViewEnabled != wasSyncView) {
-        RenderMarkdownDeferred();
+        RenderMarkdown(force: true);
       }
     }
 
@@ -405,7 +378,7 @@ namespace AnotherMarkdown
       var wasSyncView = SyncViewEnabled;
       SetSyncViewWithFirstVisibleLine(!_settings.SyncViewWithFirstVisibleLine);
       if (SyncViewEnabled != wasSyncView) {
-        RenderMarkdownDeferred();
+        RenderMarkdown(force: true);
       }
     }
 
@@ -488,17 +461,17 @@ namespace AnotherMarkdown
 
         Win32.SendMessage(PluginBase.nppData._nppHandle, (uint) NppMsg.NPPM_DMMREGASDCKDLG, 0, _ptrNppTbData.Value);
         Win32.SendMessage(PluginBase.nppData._nppHandle, (uint) NppMsg.NPPM_DMMSHOW, 0, PreviewForm.Handle);
-        IsPanelVisible = true;
+        _isPanelVisible = true;
       }
       else {
-        IsPanelVisible = !IsPanelVisible;
-        var flag = IsPanelVisible ? NppMsg.NPPM_DMMSHOW : NppMsg.NPPM_DMMHIDE;
+        _isPanelVisible = !_isPanelVisible;
+        var flag = _isPanelVisible ? NppMsg.NPPM_DMMSHOW : NppMsg.NPPM_DMMHIDE;
         Win32.SendMessage(PluginBase.nppData._nppHandle, (uint) flag, 0, PreviewForm.Handle);
       }
 
-      if (IsPanelVisible) {
+      if (_isPanelVisible) {
         PreviewForm.UpdateSettings(_settings);
-        RenderMarkdownDirect();
+        RenderMarkdown(force: true);
       }
     }
 
@@ -522,6 +495,51 @@ namespace AnotherMarkdown
       return _icon;
     }
 
+    public void RenderMarkdown(bool force = false)
+    {
+      lock (_renderMarkdownLock) {
+        if (force) {
+          _renderMarkdownAt = DateTime.UtcNow;
+        }
+        else {
+          if (_renderMarkdownAt == DateTime.MinValue) {
+            _renderMarkdownAt = DateTime.UtcNow.Add(InputUpdateThreshold);
+          }
+        }
+        if (_renderMarkdownTask == null || (_renderMarkdownTask.IsCompleted || _renderMarkdownTask.IsFaulted)) {
+          _renderMarkdownTask = RenderMarkdownTask();
+        }
+      }
+    }
+
+    private async Task RenderMarkdownTask()
+    {
+      try {
+        while (!_disposedValue) {
+          await Task.Delay(20);
+          if (_disposedValue) {
+            break;
+          }
+          if (_renderMarkdownAt > DateTime.UtcNow) {
+            continue;
+          }
+          _renderMarkdownAt = DateTime.MinValue;
+
+          var scintillaGateway = scintillaGatewayFactory();
+          var currentText = scintillaGateway.GetText(scintillaGateway.GetLength() + 1);
+
+          var currentFile = _nppGateway.GetCurrentFilePath();
+          _currentFile = currentFile;
+
+          await PreviewForm.RenderMarkdown(currentText, currentFile);
+        }
+      }
+      catch (Exception err) {
+        Console.WriteLine(err);
+        _renderMarkdownAt = DateTime.MinValue;
+      }
+    }
+
     private bool IsDarkModeEnabled()
     {
       // NPPM_ISDARKMODEENABLED (NPPMSG + 107)
@@ -531,33 +549,27 @@ namespace AnotherMarkdown
 
     protected virtual void Dispose(bool disposing)
     {
-      if (!_disposedValue) {
-        _disposedValue = true;
-        if (disposing) {
-          if (_renderDeferredCancellationSource != null) {
-            _renderDeferredCancellationSource.Cancel();
-            if (_renderDeferredTask != null) {
-              _renderDeferredTask.Wait();
-              _renderDeferredTask = null;
-            }
-            _renderDeferredCancellationSource.Dispose();
-            _renderDeferredCancellationSource = null;
-          }
-
-          _icon?.Dispose();
-          _iconBmp?.Dispose();
-          _icon = null;
-          _iconBmp = null;
-
-          if (_ptrNppTbData.HasValue) {
-            Marshal.DestroyStructure(_ptrNppTbData.Value, typeof(NppTbData));
-            Marshal.FreeHGlobal(_ptrNppTbData.Value);
-            _ptrNppTbData = null;
-          }
-          _previewForm?.Dispose();
-          _previewForm = null;
-        }
+      if (!disposing) {
+        return;
       }
+      if (_disposedValue) {
+        return;
+      }
+
+      _disposedValue = true;
+
+      _icon?.Dispose();
+      _iconBmp?.Dispose();
+      _icon = null;
+      _iconBmp = null;
+
+      if (_ptrNppTbData.HasValue) {
+        Marshal.DestroyStructure(_ptrNppTbData.Value, typeof(NppTbData));
+        Marshal.FreeHGlobal(_ptrNppTbData.Value);
+        _ptrNppTbData = null;
+      }
+      _previewForm?.Dispose();
+      _previewForm = null;
     }
 
     public void Dispose()
@@ -569,9 +581,7 @@ namespace AnotherMarkdown
 
     private const int UNUSED = 0;
 
-    private object _renderDeferredLock = new object();
-    private Task _renderDeferredTask;
-    private CancellationTokenSource _renderDeferredCancellationSource;
+    private bool _isPanelVisible;
     private MarkdownPreviewForm _previewForm;
     private object _lock = new object();
     private int _myDlgId = -1;
@@ -579,15 +589,23 @@ namespace AnotherMarkdown
     private readonly INotepadPPGateway _nppGateway;
     private string _iniFilePath;
     private int _lastCaretPosition;
-    private int _currentFirstVisibleLine;
+    private int _lastScrollToLine;
     private Settings _settings;
     private IntPtr? _ptrNppTbData;
     private Icon _icon;
     private Bitmap _iconBmp;
     private bool _disposedValue;
+
     private DateTime _skipSyncEventsDue = DateTime.MinValue;
     private string _currentFile;
+    private object _syncViewLock = new object();
+    private bool _syncViewPending = false;
+    private Task _syncViewTask;
 
-    private static readonly TimeSpan InputUpdateThreshold = TimeSpan.FromMilliseconds(400);
+    private DateTime _renderMarkdownAt = DateTime.MinValue;
+    private object _renderMarkdownLock = new object();
+    private Task _renderMarkdownTask;
+
+    private static readonly TimeSpan InputUpdateThreshold = TimeSpan.FromMilliseconds(200);
   }
 }

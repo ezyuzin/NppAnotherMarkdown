@@ -3,8 +3,8 @@
 namespace PanelCommon
 {
   [StructLayout(LayoutKind.Sequential)]
-  public struct DocumentContentChanged
+  public struct FirstLineChangedEvent
   {
-    public string Content;
+    public int Line;
   }
 }

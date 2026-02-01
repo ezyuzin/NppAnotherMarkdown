@@ -75,7 +75,7 @@ namespace Webview2Viewer.Web
 
       e.Response = _httpEnvironment.CreateWebResourceResponse(new MemoryStream(), 200, "OK", string.Join("\r\n", headers));
 
-      new Task(() => _on.DocumentChanged?.Invoke(this, new DocumentContentChanged {
+      new Task(() => _on.DocumentChanged?.Invoke(this, new DocumentChangedEvent {
         Content = requestBody
       })).Start();
     }

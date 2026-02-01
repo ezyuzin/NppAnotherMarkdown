@@ -67,7 +67,7 @@ namespace Webview2Viewer
       AddWebService(webView, fs);
 
       var api = new ApiService(webEnvironment, "api.example", _on);
-      AddWebService(webView,api);
+      AddWebService(webView, api);
       return webView;
     }
 
@@ -80,7 +80,7 @@ namespace Webview2Viewer
     private void CoreWebView2_WebResourceRequested(object sender, CoreWebView2WebResourceRequestedEventArgs e)
     {
       var uri = new Uri(e.Request.Uri);
-      foreach(var webservice in _webServices) {
+      foreach (var webservice in _webServices) {
         if (webservice.Hostname == uri.DnsSafeHost) {
           if (webservice.HandleRequest(e)) {
             return;
@@ -96,12 +96,12 @@ namespace Webview2Viewer
       });
     }
 
-    public void ScrollToElementWithLineNo(int lineNo)
+    public async Task ScrollToElementWithLineNo(int lineNo)
     {
       if (lineNo <= 0) {
         lineNo = 0;
       }
-      ExecuteWebviewAction((webView) => webView.ExecuteScriptAsync($"window.scrollToLine({lineNo})"));
+      await ExecuteWebviewActionAsync((webView) => webView.ExecuteScriptAsync($"window.scrollToLine({lineNo})"));
     }
 
     public async Task SetContentAsync(string content, string documentPath)
@@ -118,7 +118,7 @@ namespace Webview2Viewer
         cssFile = _settings.IsDarkModeEnabled ? _settings.DefaultDarkModeCssFile : _settings.DefaultCssFile;
       }
       var lineMark = (_settings.SyncViewWithFirstVisibleLine || _settings.SyncViewWithCaretPosition);
-            var reload = (_documentPath != documentPath);
+      var reload = (_documentPath != documentPath);
       reload = reload || (_assetPath != assetsPath);
       reload = reload || (_cssFile != cssFile);
       reload = reload || (_lineMark != lineMark);
@@ -137,58 +137,55 @@ namespace Webview2Viewer
       content = content.Replace(replaceFileMapping, $"http://{fs.Hostname}");
       fs.SetContent(documentPath, content);
 
-      if (reload) {
-        if (!string.IsNullOrEmpty(_documentPath) && _documentPath != documentPath) {
-          await ExecuteWebviewActionAsync(async (webView) => {
-            var value = await webView.ExecuteScriptAsync("window.pageYOffset");
-            _preservePosition[_documentPath] = (int) double.Parse(value, CultureInfo.InvariantCulture);
-          });
-        }
+      if (!reload) {
+        await ExecuteWebviewActionAsync((webView) => webView.ExecuteScriptAsync("window.contentChanged();"));
+        return;
+      }
 
-        _documentPath = documentPath;
-        _cssFile = cssFile;
-        _lineMark = lineMark;
-        _trackFirstLine = _settings.SyncViewWithFirstVisibleLine;
-        _enabledMarkdownPlugins = string.Join(",", _settings.EnabledMarkdownPlugins);
-
-        var loader = File.ReadAllText(assetsPath + "/loader.html");
-        cssFile = cssFile.Replace("\\", "/");
-        assetsPath = assetsPath.Replace("\\", "/");
-
-        if (cssFile.StartsWith(assetsPath + "/")) {
-          cssFile = cssFile.Substring((assetsPath).Length + 1);
-          cssFile = "http://assets.example/" + HttpUtility2.UrlPathEncode(cssFile);
-        }
-        else {
-          cssFile = $"http://{fs.Hostname}/" + HttpUtility2.PathToUri(cssFile);
-        }
-
-        loader = loader.Replace("__BASE_URL__", HttpUtility2.PathToUri(baseDir));
-        var options = new JObject {
-          ["document"] = "http://local.example" + fs.DocumentUri
-        };
-
-        if (documentPath.EndsWith(".md")) {
-          options["css"] = cssFile;
-          options["lineMark"] = (_settings.SyncViewWithFirstVisibleLine || _settings.SyncViewWithCaretPosition);
-          options["trackFirstLine"] = _settings.SyncViewWithFirstVisibleLine;
-          if (_preservePosition.TryGetValue(_documentPath, out var pageYOffset)) {
-            options["pageYOffset"] = pageYOffset;
-          }
-          options["md.extensions"] = JToken.FromObject(_settings.EnabledMarkdownPlugins);
-        }
-
-        loader = loader.Replace("__OPTIONS__", JsonConvert.SerializeObject(options));
-
-        await ExecuteWebviewActionAsync((webView) => {
-          webView.NavigateToString(loader);
+      if (!string.IsNullOrEmpty(_documentPath) && _documentPath != documentPath) {
+        await ExecuteWebviewActionAsync(async (webView) => {
+          var value = await webView.ExecuteScriptAsync("window.pageYOffset");
+          _preservePosition[_documentPath] = (int) double.Parse(value, CultureInfo.InvariantCulture);
         });
-        await SetZoomLevel(_settings.ZoomLevel);
-        
+      }
+
+      _documentPath = documentPath;
+      _cssFile = cssFile;
+      _lineMark = lineMark;
+      _trackFirstLine = _settings.SyncViewWithFirstVisibleLine;
+      _enabledMarkdownPlugins = string.Join(",", _settings.EnabledMarkdownPlugins);
+
+      var loader = File.ReadAllText(assetsPath + "/loader.html");
+      cssFile = cssFile.Replace("\\", "/");
+      assetsPath = assetsPath.Replace("\\", "/");
+
+      if (cssFile.StartsWith(assetsPath + "/")) {
+        cssFile = cssFile.Substring((assetsPath).Length + 1);
+        cssFile = "http://assets.example/" + HttpUtility2.UrlPathEncode(cssFile);
       }
       else {
-        await ExecuteWebviewActionAsync((webView) => webView.ExecuteScriptAsync("window.contentChanged();"));
+        cssFile = $"http://{fs.Hostname}/" + HttpUtility2.PathToUri(cssFile);
       }
+
+      loader = loader.Replace("__BASE_URL__", HttpUtility2.PathToUri(baseDir));
+      var options = new JObject {
+        ["document"] = "http://local.example" + fs.DocumentUri
+      };
+
+      if (documentPath.EndsWith(".md")) {
+        options["css"] = cssFile;
+        options["lineMark"] = (_settings.SyncViewWithFirstVisibleLine || _settings.SyncViewWithCaretPosition);
+        options["trackFirstLine"] = _settings.SyncViewWithFirstVisibleLine;
+        if (_preservePosition.TryGetValue(_documentPath, out var pageYOffset)) {
+          options["pageYOffset"] = pageYOffset;
+        }
+        options["md.extensions"] = JToken.FromObject(_settings.EnabledMarkdownPlugins);
+      }
+
+      loader = loader.Replace("__OPTIONS__", JsonConvert.SerializeObject(options));
+
+      await ExecuteWebviewActionAsync((webView) => webView.NavigateToString(loader));
+      await SetZoomLevel(_settings.ZoomLevel);
     }
 
     public async Task SetZoomLevel(int zoomLevel)
@@ -201,11 +198,7 @@ namespace Webview2Viewer
       });
     }
 
-    private double ConvertToZoomFactor(int zoomLevel)
-    {
-      double zoomFactor = Convert.ToDouble(zoomLevel) / 100;
-      return zoomFactor;
-    }
+    private double ConvertToZoomFactor(int zoomLevel) => Convert.ToDouble(zoomLevel) / 100;
 
     void OnWebBrowser_NavigationStarting(object sender, CoreWebView2NavigationStartingEventArgs e)
     {
@@ -220,7 +213,7 @@ namespace Webview2Viewer
           if (_on.Navigate != null && navUri.AbsolutePath.EndsWith(".md")) {
             var path = HttpUtility2.UriToPath(navUri.AbsolutePath);
             if (File.Exists(path)) {
-              _on.Navigate(this, new NavigateTo { Filename = path });
+              _on.Navigate(this, new NavigateToEvent { Filename = path });
             }
           }
           return;

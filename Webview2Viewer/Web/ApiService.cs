@@ -49,7 +49,7 @@ namespace Webview2Viewer.Web
       return NoContent();
     }
 
-    private PasteImage? GetPasteImage(byte[] body, string boundary)
+    private PasteImageEvent? GetPasteImage(byte[] body, string boundary)
     {
       var boundaryBytes = Encoding.ASCII.GetBytes("--" + boundary);
       var headerEnd = Encoding.ASCII.GetBytes("\r\n\r\n");
@@ -86,7 +86,7 @@ namespace Webview2Viewer.Web
       }
       byte[] imageBytes = Convert.FromBase64String(base64);
 
-      return new PasteImage { Filename = fileName, Content = imageBytes };
+      return new PasteImageEvent { Filename = fileName, Content = imageBytes };
     }
 
     private CoreWebView2WebResourceResponse PostWebEvent(CoreWebView2WebResourceRequest request)
@@ -99,8 +99,8 @@ namespace Webview2Viewer.Web
       switch (webEvent.EventName) {
         case "trackFirstLine": {
           var value = webEvent.Payload["line"]?.ToObject<int>();
-          if (value != null && _on.TrackFirstLine != null) {
-            _on.TrackFirstLine(this, new FirstLineChanged { Line = value.Value });
+          if (value != null && _on.FirstLineChanged != null) {
+            _on.FirstLineChanged(this, new FirstLineChangedEvent { Line = value.Value });
           }
           break;
         }

@@ -90,14 +90,12 @@
     <Compile Include="Forms\AboutForm.Designer.cs">
       <DependentUpon>AboutForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Forms\IViewerInterface.cs" />
     <Compile Include="Forms\MarkdownPreviewForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Forms\MarkdownPreviewForm.Designer.cs">
       <DependentUpon>MarkdownPreviewForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Forms\ActiveXScreenShotMaker.cs" />
     <Compile Include="Forms\SettingsForm.cs">
       <SubType>Form</SubType>
     </Compile>

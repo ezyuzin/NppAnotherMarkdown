@@ -5,7 +5,7 @@ import markdownItLineMark from './plugins/markdown-it-linemark'
 import { IDocumentOptions, IViewPlugin } from './Contract/IViewPlugin';
 import { markdownItPluginPack } from './plugins/markdown-it-pluginpack';
 import { InitBottomSpacer, ScrollToLine, ScrollToPageY } from './Misc/ScrollTo';
-import { InitTrackFirstLine } from './Misc/TrackFirstLine';
+import { InitSyncView } from './Misc/SynvView';
 import { InitDragAndDrop } from './Misc/DragAndDrop';
 import { InitPasteContent } from './Misc/PasteContent';
 import { MarkdownRenderContext } from './Misc/MarkdownRenderContext';
@@ -35,7 +35,7 @@ async function setDocument(container: HTMLElement, args: Partial<IDocumentOption
   const decoder = new TextDecoder(detect_charset(new Uint8Array(data)));
   let source = decoder.decode(data);
 
-  InitTrackFirstLine(options.trackFirstLine, options.modified);
+  InitSyncView(options.trackFirstLine, options.modified);
 
   const context = MarkdownRenderContext;
   if (context.sourceUrl === sourceUrl && context.source === source && context.lineMark === options.lineMark) {
