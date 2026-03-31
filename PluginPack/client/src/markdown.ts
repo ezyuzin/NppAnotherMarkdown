@@ -32,8 +32,25 @@ async function setDocument(container: HTMLElement, args: Partial<IDocumentOption
 
   const response = await fetch(sourceUrl);
   const data = await response.arrayBuffer();
-  const decoder = new TextDecoder(detect_charset(new Uint8Array(data)));
-  let source = decoder.decode(data);
+  let source;
+
+  if (data.byteLength > 3) {
+    let charset = detect_charset(new Uint8Array(data));
+    if (charset.match(/^(utf\-8|utf8)/)) {
+      charset = "utf-8";
+    }
+    const decoder = new TextDecoder(charset);
+    source = decoder.decode(data);
+  }
+  else {
+    if (data.byteLength != 0) {
+      const decoder = new TextDecoder("ascii");
+      source = decoder.decode(data);
+    }
+    else {
+      source = "";
+    }
+  }
 
   InitSyncView(options.trackFirstLine, options.modified);
 
