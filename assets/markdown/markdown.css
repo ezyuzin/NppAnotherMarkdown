@@ -205,8 +205,13 @@ li p.first {
   display: inline-block;
 }
 
-ul, ol {
+ul {
   padding-left: 15px;
+}
+
+ol {
+  padding-left: 0px;
+  list-style-position: inside;
 }
 
 ul :first-child,
