@@ -180,7 +180,7 @@ namespace AnotherMarkdown
         }
 
         _lastScrollToLine = nLine;
-        if (_skipSyncEventsDue < DateTime.UtcNow) {
+        if (_skipSyncEventsDue < DateTime.UtcNow && _isPanelVisible) {
           await PreviewForm.ScrollToElementWithLineNo(nLine);
         }
       }
@@ -515,7 +515,7 @@ namespace AnotherMarkdown
     private async Task RenderMarkdownTask()
     {
       try {
-        while (!_disposedValue) {
+        while (!_disposedValue && _isPanelVisible) {
           await Task.Delay(20);
           if (_disposedValue) {
             break;
@@ -535,7 +535,6 @@ namespace AnotherMarkdown
         }
       }
       catch (Exception err) {
-        Console.WriteLine(err);
         _renderMarkdownAt = DateTime.MinValue;
       }
     }
