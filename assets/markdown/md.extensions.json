@@ -56,6 +56,9 @@
   "plantuml": {
     "title": "plantuml: support plant uml schemes"
   },
+  "mermaid": {
+    "title": "mermaid: render mermaid diagrams (flowchart, sequence, gantt)"
+  },
   "qrcode": {
     "title": "qrcode: convert text to qrcode"
   },
