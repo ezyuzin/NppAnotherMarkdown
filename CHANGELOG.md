@@ -1,5 +1,12 @@
 ## Version History
 
+### NppAnotherMarkdown 0.1.12 (released 2026-08-17)
+* added support mermaid plugin (thanks to @MassimilianoPili)  
+![](help/plugin-mermaid.jpg) 
+
+will produce diagram:   
+![](help/plugin-mermaid-result.jpg)
+
 ### NppAnotherMarkdown 0.1.7 (released 2026-01-20)
 
 * rewrite all client-side code from plain JavaScript to TypeScript

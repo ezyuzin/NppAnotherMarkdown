@@ -7,8 +7,7 @@
   "scripts": {
     "build:app": "webpack --config ./client/app.webpack.config.js",
     "build:highlightjs": "webpack --config ./client/highlightjs.webpack.config.js",
-    "build:mermaid": "node ./client/copy-mermaid.js",
-    "build:all": "concurrently \"yarn build:highlightjs\"  \"yarn build:app\" \"yarn build:mermaid\""
+    "build:all": "concurrently \"yarn build:highlightjs\"  \"yarn build:app\""
   },
   "dependencies": {},
   "devDependencies": {
