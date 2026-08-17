@@ -29,6 +29,7 @@ import MarkdownIt from 'markdown-it'
 import markdownItTaskLists from './markdown-it-task-lists'
 import markdownItEmbedQrcode from './markdown-it-embed-qrcode'
 import markdownItEmbedPano360 from './markdown-it-embed-pano360'
+import markdownItMermaid from './markdown-it-mermaid'
 import { importCss, importScript } from '../Misc/DynamicLoad'
 
 export async function markdownItPluginPack(enabled: string[], md: MarkdownIt) {
@@ -127,6 +128,9 @@ export async function markdownItPluginPack(enabled: string[], md: MarkdownIt) {
   if (enabled.includes("plantuml")) {
     md.use(plantuml, {
     });
+  }
+  if (enabled.includes("mermaid")) {
+    md.use(markdownItMermaid);
   }
   if (enabled.includes("ruby")) {
     md.use(ruby, {});
