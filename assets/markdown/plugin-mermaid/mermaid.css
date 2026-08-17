@@ -1,0 +1,16 @@
+/* Holder emitted for "mermaid" fenced blocks. Remove the default <pre> code */
+/* frame so the rendered SVG is not boxed, and center the diagram. */
+pre.mermaid {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 1em 0;
+  text-align: center;
+  overflow: visible;
+  white-space: normal;
+}
+
+pre.mermaid svg {
+  max-width: 100%;
+  height: auto;
+}

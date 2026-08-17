@@ -47,6 +47,7 @@
     "highlight.js": "^11.11.1",
     "markdown-it": "^14.1.0",
     "markdown-it-emoji": "^3.0.0",
+    "mermaid": "^11.4.0",
     "qrcode": "^1.5.4"
   },
   "browserslist": {
