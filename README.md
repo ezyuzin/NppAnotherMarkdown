@@ -30,7 +30,7 @@ The plugin is a fork of the [NppMarkdownPanel plugin](https://github.com/mohzy83
 | [mark](https://mdit-plugins.github.io/mark.html)               | Mark and highlight contents |
 | [pano360]()                                                    | Editing and preview interactive 360-degree panoramic photos. It uses [panellum](https://github.com/mpetroff/pannellum) library and invokes with markdown markup syntax `{% pano360 path_to_scene %}`. Example can be found [here](./example/pano/index.md).<br/> Editing index.pano360.json in Notepad++ allow interactive add hotspots and transition between photos, makes scene editing easier.|
 | [plantuml](https://mdit-plugins.github.io/plantuml.html)       | Add support plant uml schemes |
-| [mermaid](https://mermaid.js.org/)                             | Render mermaid diagrams (flowchart, sequence, gantt, ...) from `mermaid` fenced code blocks |
+| [mermaid](https://mermaid.js.org/)                             | Render mermaid diagrams (flowchart, sequence, gantt, ...) from `mermaid` fenced code blocks ![](help/plugin-mermaid.jpg) |
 | [ruby](https://mdit-plugins.github.io/ruby.html)               | Ruby annotation \<ruby\> |
 | [qrcode]()                                                     | Display QRCode from string `{% qrcode text="ABC" %}` |
 | [spoiler](https://mdit-plugins.github.io/spoiler.html)         | Plugin for hide content |
