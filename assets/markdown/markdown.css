@@ -201,17 +201,21 @@ p {
   text-align: justify;
 }
 
-li p.first {
-  display: inline-block;
-}
+/* markdown-it wraps the content of a list item in <p> whenever the list is
+   "loose" (its items are separated by blank lines). A block-level <p>
+   combined with `list-style-position: inside` pushes the marker onto a line
+   of its own. Keeping the marker outside the content box renders the number
+   and the first line of text together, and matches markdown-dark.css.
+   (The `li p.first` rule this replaces was dead code: class="first" was
+   emitted by the old Marked renderer, markdown-it never produces it.) */
 
 ul {
   padding-left: 15px;
 }
 
 ol {
-  padding-left: 0px;
-  list-style-position: inside;
+  padding-left: 24px;
+  list-style-position: outside;
 }
 
 ul :first-child,
