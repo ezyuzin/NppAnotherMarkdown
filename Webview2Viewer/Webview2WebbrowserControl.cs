@@ -207,8 +207,9 @@ namespace Webview2Viewer
       }
       else if (!e.Uri.ToString().StartsWith("data:")) {
         e.Cancel = true;
-        var p = new Process();
-        var navUri = new Uri(e.Uri);
+        if (!Uri.TryCreate(e.Uri, UriKind.Absolute, out var navUri)) {
+          return;
+        }
         if (navUri.DnsSafeHost == "local.example") {
           if (_on.Navigate != null && navUri.AbsolutePath.EndsWith(".md")) {
             var path = HttpUtility2.UriToPath(navUri.AbsolutePath);
@@ -218,9 +219,26 @@ namespace Webview2Viewer
           }
           return;
         }
-        p.StartInfo = new ProcessStartInfo(e.Uri);
-        p.Start();
+        OpenExternalLink(navUri);
       }
+    }
+
+    // Schemes that may be handed to the shell, i.e. opened in the default browser or mail client.
+    private static readonly string[] ExternalLinkSchemes = { Uri.UriSchemeHttp, Uri.UriSchemeHttps, Uri.UriSchemeMailto };
+
+    // Passing an arbitrary link to ShellExecute lets a Markdown document start programs:
+    // file:///C:/Windows/System32/calc.exe, UNC paths (\\host\share\app.exe), .lnk/.bat files
+    // or protocol handlers such as search-ms: or ms-msdt:. Only web and mail links are
+    // opened, everything else is ignored. See mohzy83/NppMarkdownPanel#180 (fixed in 0.9.3).
+    private static void OpenExternalLink(Uri uri)
+    {
+      if (!ExternalLinkSchemes.Contains(uri.Scheme)) {
+        return;
+      }
+      try {
+        Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true });
+      }
+      catch (Exception) { }
     }
 
     private void ExecuteWebviewAction(Func<WebView2, Task> action)
