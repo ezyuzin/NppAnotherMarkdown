@@ -18,6 +18,8 @@ module.exports = function() {
   const modules = [
     "mermaid/dist/mermaid.min.js",
   ];
+  
+  fs.mkdirSync(outDir, { recursive: true });
   for(let module of modules) {
     const name = path.basename(module);
     console.log(`copy ${name} to dist/js/${name}`);
