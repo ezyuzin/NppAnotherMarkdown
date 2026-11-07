@@ -132,7 +132,9 @@ jobs:
 
       - name: Install dependencies
         working-directory: PluginPack
-        run: yarn install --frozen-lockfile
+        run: |
+            yarn install --frozen-lockfile
+            yarn
 
       - name: Build PluginPack
         working-directory: PluginPack
