@@ -5,6 +5,8 @@ using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Web.WebView2.Core;
@@ -49,12 +51,18 @@ namespace Webview2Viewer
 
       var webView = new WebView2();
       var opt = new CoreWebView2EnvironmentOptions();
-      var webEnvironment = await CoreWebView2Environment.CreateAsync(null, cacheDir, opt);
-      await webView.EnsureCoreWebView2Async(webEnvironment);
+      _httpEnvironment = await CoreWebView2Environment.CreateAsync(null, cacheDir, opt);
+      await webView.EnsureCoreWebView2Async(_httpEnvironment);
+
+      webView.CoreWebView2.AddWebResourceRequestedFilter($"http://{APP_HOSTNAME}/*", CoreWebView2WebResourceContext.All);
+      var fs = new LocalFileService(_httpEnvironment, "local.example", _on);
+      AddWebService(webView, fs);
+
+      var api = new ApiService(_httpEnvironment, "api.example", _on);
+      AddWebService(webView, api);
 
       webView.AccessibleName = "webView";
       webView.Name = "webView";
-      webView.Source = new Uri("about:blank", UriKind.Absolute);
       webView.Location = new Point(1, 27);
       webView.Size = new Size(800, 424);
       webView.Dock = DockStyle.Fill;
@@ -62,12 +70,8 @@ namespace Webview2Viewer
       webView.NavigationStarting += OnWebBrowser_NavigationStarting;
       webView.ZoomFactor = ConvertToZoomFactor(_settings.ZoomLevel);
       webView.CoreWebView2.WebResourceRequested += CoreWebView2_WebResourceRequested;
+      webView.Source = new Uri($"http://{APP_HOSTNAME}/", UriKind.Absolute);
 
-      var fs = new LocalFileService(webEnvironment, "local.example", _on);
-      AddWebService(webView, fs);
-
-      var api = new ApiService(webEnvironment, "api.example", _on);
-      AddWebService(webView, api);
       return webView;
     }
 
@@ -80,14 +84,39 @@ namespace Webview2Viewer
     private void CoreWebView2_WebResourceRequested(object sender, CoreWebView2WebResourceRequestedEventArgs e)
     {
       var uri = new Uri(e.Request.Uri);
+      var hostname = uri.DnsSafeHost;
+
+      if (hostname == APP_HOSTNAME && _httpEnvironment != null) {
+        var headers = new List<string> { "Content-Type: text/html; charset=utf-8" };
+        if (e.Request.Method == "GET") {
+          var stream = GetResponseStream(_loaderContent);
+          e.Response = _httpEnvironment.CreateWebResourceResponse(stream, 200, "OK", string.Join("\r\n", headers));
+          return;
+        }
+        e.Response = _httpEnvironment.CreateWebResourceResponse(null, 404, "Not Found", string.Join("\r\n", headers));
+        return;
+      }
+
       foreach (var webservice in _webServices) {
-        if (webservice.Hostname == uri.DnsSafeHost) {
+        if (webservice.Hostname == hostname) {
           if (webservice.HandleRequest(e)) {
             return;
           }
         }
       }
     }
+
+    private static MemoryStream GetResponseStream(string content, MemoryStream stream = null)
+    {
+      if (stream == null) {
+        stream = new MemoryStream();
+      }
+      using (var writter = new StreamWriter(stream, Encoding.UTF8, 2048, true)) {
+        writter.Write(content);
+      }
+      return stream;
+    }
+
 
     public void AddToHost(Control host)
     {
@@ -184,8 +213,9 @@ namespace Webview2Viewer
 
       loader = loader.Replace("__OPTIONS__", JsonConvert.SerializeObject(options));
 
-      await ExecuteWebviewActionAsync((webView) => webView.NavigateToString(loader));
+      _loaderContent = loader;
       await SetZoomLevel(_settings.ZoomLevel);
+      await ExecuteWebviewActionAsync((webView) => webView.ExecuteScriptAsync($"window.location = 'http://{APP_HOSTNAME}/'"));
     }
 
     public async Task SetZoomLevel(int zoomLevel)
@@ -202,35 +232,33 @@ namespace Webview2Viewer
 
     void OnWebBrowser_NavigationStarting(object sender, CoreWebView2NavigationStartingEventArgs e)
     {
-      if (e.Uri.ToString().StartsWith("about:blank")) {
-        e.Cancel = true;
+      var uri = e.Uri;
+      if (!Regex.IsMatch(uri, "^(http(s)?|file):")) {
+        return;
       }
-      else if (!e.Uri.ToString().StartsWith("data:")) {
+      if (!Uri.TryCreate(uri, UriKind.Absolute, out var navUri)) {
         e.Cancel = true;
-        var p = new Process();
-        var navUri = new Uri(e.Uri);
-        if (navUri.DnsSafeHost == "local.example") {
-          if (_on.Navigate != null && navUri.AbsolutePath.EndsWith(".md")) {
-            var path = HttpUtility2.UriToPath(navUri.AbsolutePath);
-            if (File.Exists(path)) {
-              _on.Navigate(this, new NavigateToEvent { Filename = path });
-            }
+        return;
+      }
+
+      if (navUri.DnsSafeHost == APP_HOSTNAME) {
+        return;
+      }
+
+      e.Cancel = true;
+      if (navUri.DnsSafeHost == "local.example") {
+        if (_on.Navigate != null && navUri.AbsolutePath.EndsWith(".md")) {
+          var path = HttpUtility2.UriToPath(navUri.AbsolutePath);
+          if (File.Exists(path)) {
+            _on.Navigate(this, new NavigateToEvent { Filename = path });
           }
-          return;
         }
-        p.StartInfo = new ProcessStartInfo(e.Uri);
-        p.Start();
+        return;
       }
-    }
-
-    private void ExecuteWebviewAction(Func<WebView2, Task> action)
-    {
-      var asyncTask = new Task(async () => {
-        await ExecuteWebviewActionAsync(action);
-      });
-
-      asyncTask.Start(TaskScheduler.FromCurrentSynchronizationContext());
-      asyncTask.Wait();
+      var p = new Process {
+        StartInfo = new ProcessStartInfo(uri)
+      };
+      p.Start();
     }
 
     private void ExecuteWebviewAction(Action<WebView2> action)
@@ -279,8 +307,12 @@ namespace Webview2Viewer
     }
 
     const string CONFIG_FOLDER_NAME = "AnotherMarkdown";
+    public const string APP_HOSTNAME = "anothermarkdown.local";
 
+    private string _loaderContent = string.Empty;
     private Task<WebView2> _webView;
+    private CoreWebView2Environment _httpEnvironment = null;
+
     private object _webViewInitLock = new object();
     private string _cssFile;
     private string _assetPath;

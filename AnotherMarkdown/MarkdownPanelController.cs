@@ -517,7 +517,7 @@ namespace AnotherMarkdown
       try {
         while (!_disposedValue && _isPanelVisible) {
           await Task.Delay(20);
-          if (_disposedValue) {
+          if (_disposedValue || _renderMarkdownAt == DateTime.MinValue) {
             break;
           }
           if (_renderMarkdownAt > DateTime.UtcNow) {
@@ -534,7 +534,7 @@ namespace AnotherMarkdown
           await PreviewForm.RenderMarkdown(currentText, currentFile);
         }
       }
-      catch (Exception err) {
+      catch (Exception) {
         _renderMarkdownAt = DateTime.MinValue;
       }
     }

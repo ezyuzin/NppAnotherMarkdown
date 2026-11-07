@@ -12,7 +12,7 @@ using PanelCommon;
 
 namespace Webview2Viewer.Web
 {
-  internal class LocalFileService: IWebService
+  internal class LocalFileService : IWebService
   {
     public string DocumentUri { get; private set; }
     public string DocumentPath { get; private set; }
@@ -39,6 +39,12 @@ namespace Webview2Viewer.Web
       if (e.Response != null) {
         return false;
       }
+
+      if (!AllowedReferer.Contains(GetReferer(e))) {
+        Error404(e);
+        return true;
+      }
+
       if (e.Request.Method == "GET") {
         var uri = new Uri(e.Request.Uri);
         HttpGetContent(e, uri);
@@ -64,9 +70,7 @@ namespace Webview2Viewer.Web
         return;
       }
 
-      var headers = new List<string> {
-        "Access-Control-Allow-Origin: *"
-      };
+      var headers = GetDefaultResponseHeaders();
 
       string requestBody;
       using (var reader = new StreamReader(e.Request.Content, Encoding.UTF8)) {
@@ -84,9 +88,7 @@ namespace Webview2Viewer.Web
     {
       var charset = "";
       byte[] bytes = null;
-      var headers = new List<string> {
-        "Access-Control-Allow-Origin: *"
-      };
+      var headers = GetDefaultResponseHeaders();
 
       if (Regex.IsMatch(requestUri.AbsolutePath, @"\*\.(\*|.+)$")) {
         var path = HttpUtility2.UriToPath(requestUri.AbsolutePath);
@@ -152,16 +154,15 @@ namespace Webview2Viewer.Web
 
     private void Error404(CoreWebView2WebResourceRequestedEventArgs e)
     {
-      e.Response = _httpEnvironment.CreateWebResourceResponse(new MemoryStream(), 404, "NotFound", $"");
+      var headers = GetDefaultResponseHeaders();
+      e.Response = _httpEnvironment.CreateWebResourceResponse(new MemoryStream(), 404, "NotFound", string.Join("\r\n", headers));
     }
 
     private void HttpOptionsContent(CoreWebView2WebResourceRequestedEventArgs e, Uri uri)
     {
       var charset = "";
-      var headers = new List<string> {
-        "Access-Control-Allow-Origin: *",
-        "Access-Control-Allow-Headers: *"
-      };
+      var headers = GetDefaultResponseHeaders();
+      headers.Add("Access-Control-Allow-Headers: *");
 
       if (DocumentUri.Equals(uri.AbsolutePath, StringComparison.InvariantCultureIgnoreCase)) {
         charset = "; charset=utf-8";
@@ -184,6 +185,31 @@ namespace Webview2Viewer.Web
 
       e.Response = _httpEnvironment.CreateWebResourceResponse(new MemoryStream(), 204, "OK", string.Join("\r\n", headers));
     }
+
+    private string GetReferer(CoreWebView2WebResourceRequestedEventArgs e)
+    {
+      var referrer = e.Request.Headers
+        .Where(h => h.Key.Equals("referer", StringComparison.CurrentCultureIgnoreCase))
+        .ToArray();
+
+      return (referrer.Length > 0)
+        ? referrer[0].Value
+        : string.Empty;
+    }
+
+    private static List<string> GetDefaultResponseHeaders()
+    {
+      return new List<string> {
+        $"Access-Control-Allow-Origin: {AllowedOrigin}"
+      };
+    }
+
+    public static readonly string[] AllowedHostnames = new string[] {
+      Webview2WebbrowserControl.APP_HOSTNAME
+    };
+
+    public static readonly string AllowedOrigin = string.Join(",", AllowedHostnames.Select(hostname => $"http://{hostname}"));
+    public static readonly HashSet<string> AllowedReferer = AllowedHostnames.Select(hostname => $"http://{hostname}/").ToHashSet();
 
     private byte[] _documentBytesData;
     private readonly CoreWebView2Environment _httpEnvironment;
